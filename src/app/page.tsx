@@ -11,6 +11,16 @@ type Project = {
   created_at: string;
 };
 
+type ProjectData = {
+  systemName: string;
+  notes: string;
+};
+
+const emptyProjectData: ProjectData = {
+  systemName: "",
+  notes: "",
+};
+
 export default function Home() {
   const [user, setUser] = useState<User | null>(null);
   const [email, setEmail] = useState("");
@@ -19,18 +29,14 @@ export default function Home() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [newProjectName, setNewProjectName] = useState("");
 
+  const [activeProject, setActiveProject] = useState<Project | null>(null);
+  const [projectData, setProjectData] =
+    useState<ProjectData>(emptyProjectData);
+
   async function signUp() {
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-    });
-
-    if (error) {
-      alert(error.message);
-      return;
-    }
-
-    alert("Account created. Please check your email to confirm your account.");
+    const { error } = await supabase.auth.signUp({ email, password });
+    if (error) alert(error.message);
+    else alert("Account created. Please check your email.");
   }
 
   async function signIn() {
@@ -38,17 +44,14 @@ export default function Home() {
       email,
       password,
     });
-
-    if (error) {
-      alert(error.message);
-      return;
-    }
+    if (error) alert(error.message);
   }
 
   async function signOut() {
     await supabase.auth.signOut();
     setUser(null);
     setProjects([]);
+    setActiveProject(null);
   }
 
   async function loadProjects(currentUser: User) {
@@ -67,38 +70,49 @@ export default function Home() {
   }
 
   async function createProject() {
-  if (!user) return;
+    if (!user) return;
 
-  if (!newProjectName.trim()) {
-    alert("Please enter a project name.");
-    return;
+    if (!newProjectName.trim()) {
+      alert("Please enter a project name.");
+      return;
+    }
+
+    const { data: project, error: projectError } = await supabase
+      .from("projects")
+      .insert([
+        {
+          name: newProjectName.trim(),
+          user_id: user.id,
+        },
+      ])
+      .select()
+      .single();
+
+    if (projectError) {
+      alert(projectError.message);
+      return;
+    }
+
+    const { error: dataError } = await supabase.from("project_data").insert([
+      {
+        project_id: project.id,
+        data: emptyProjectData,
+      },
+    ]);
+
+    if (dataError) {
+      alert(dataError.message);
+      return;
+    }
+
+    setNewProjectName("");
+    await loadProjects(user);
   }
-
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-
-  console.log("Session user id:", session?.user.id);
-  console.log("State user id:", user.id);
-
-  const { error } = await supabase.from("projects").insert([
-    {
-      name: newProjectName.trim(),
-      user_id: user.id,
-    },
-  ]);
-
-  if (error) {
-    alert(error.message);
-    return;
-  }
-
-  setNewProjectName("");
-  await loadProjects(user);
-}
 
   async function deleteProject(projectId: string) {
     if (!confirm("Delete this project?")) return;
+
+    await supabase.from("project_data").delete().eq("project_id", projectId);
 
     const { error } = await supabase
       .from("projects")
@@ -110,29 +124,78 @@ export default function Home() {
       return;
     }
 
-    if (user) {
-      await loadProjects(user);
+    if (activeProject?.id === projectId) {
+      setActiveProject(null);
+      setProjectData(emptyProjectData);
     }
+
+    if (user) await loadProjects(user);
+  }
+
+  async function openProject(project: Project) {
+    setActiveProject(project);
+
+    const { data, error } = await supabase
+  .from("project_data")
+  .select("*")
+  .eq("project_id", project.id)
+  .maybeSingle();
+
+if (error) {
+  alert(error.message);
+  return;
+}
+
+if (!data) {
+  const { error: createDataError } = await supabase.from("project_data").insert([
+    {
+      project_id: project.id,
+      data: emptyProjectData,
+    },
+  ]);
+
+  if (createDataError) {
+    alert(createDataError.message);
+    return;
+  }
+
+  setProjectData(emptyProjectData);
+  return;
+}
+
+setProjectData((data.data as ProjectData) ?? emptyProjectData);
+  }
+
+  async function saveProject() {
+    if (!activeProject) return;
+
+    const { error } = await supabase
+      .from("project_data")
+      .update({
+        data: projectData,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("project_id", activeProject.id);
+
+    if (error) {
+      alert(error.message);
+      return;
+    }
+
+    alert("Project saved.");
   }
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
       setUser(data.user);
-
-      if (data.user) {
-        loadProjects(data.user);
-      }
+      if (data.user) loadProjects(data.user);
     });
 
     const { data: listener } = supabase.auth.onAuthStateChange(
       (_event, session) => {
         setUser(session?.user ?? null);
-
-        if (session?.user) {
-          loadProjects(session.user);
-        } else {
-          setProjects([]);
-        }
+        if (session?.user) loadProjects(session.user);
+        else setProjects([]);
       }
     );
 
@@ -181,6 +244,63 @@ export default function Home() {
     );
   }
 
+  if (activeProject) {
+    return (
+      <main style={styles.page}>
+        <section style={styles.wideCard}>
+          <div style={styles.headerRow}>
+            <div>
+              <h1>{activeProject.name}</h1>
+              <p style={styles.muted}>Project workspace</p>
+            </div>
+
+            <div style={styles.row}>
+              <button
+                style={styles.secondaryButton}
+                onClick={() => setActiveProject(null)}
+              >
+                Back to Projects
+              </button>
+              <button style={styles.button} onClick={saveProject}>
+                Save Project
+              </button>
+            </div>
+          </div>
+
+          <hr style={styles.divider} />
+
+          <label style={styles.label}>
+            System Name
+            <input
+              style={styles.input}
+              value={projectData.systemName}
+              onChange={(event) =>
+                setProjectData({
+                  ...projectData,
+                  systemName: event.target.value,
+                })
+              }
+            />
+          </label>
+
+          <label style={styles.label}>
+            Notes
+            <textarea
+              style={styles.textarea}
+              value={projectData.notes}
+              onChange={(event) =>
+                setProjectData({
+                  ...projectData,
+                  notes: event.target.value,
+                })
+              }
+            />
+          </label>
+        </section>
+      </main>
+    );
+  }
+
   return (
     <main style={styles.page}>
       <section style={styles.wideCard}>
@@ -224,12 +344,20 @@ export default function Home() {
                   </p>
                 </div>
 
-                <button
-                  style={styles.dangerButton}
-                  onClick={() => deleteProject(project.id)}
-                >
-                  Delete
-                </button>
+                <div style={styles.row}>
+                  <button
+                    style={styles.secondaryButton}
+                    onClick={() => openProject(project)}
+                  >
+                    Open
+                  </button>
+                  <button
+                    style={styles.dangerButton}
+                    onClick={() => deleteProject(project.id)}
+                  >
+                    Delete
+                  </button>
+                </div>
               </div>
             ))
           )}
@@ -262,9 +390,7 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: "14px",
     border: "1px solid #d9e0ea",
   },
-  muted: {
-    color: "#637083",
-  },
+  muted: { color: "#637083" },
   label: {
     display: "block",
     marginTop: "12px",
@@ -277,9 +403,19 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: "10px",
     border: "1px solid #d9e0ea",
   },
+  textarea: {
+    width: "100%",
+    minHeight: "120px",
+    padding: "10px",
+    marginTop: "6px",
+    borderRadius: "10px",
+    border: "1px solid #d9e0ea",
+  },
   row: {
     display: "flex",
     gap: "8px",
+    alignItems: "center",
+    flexWrap: "wrap",
   },
   headerRow: {
     display: "flex",
@@ -299,6 +435,14 @@ const styles: Record<string, React.CSSProperties> = {
     border: "1px solid #172033",
     background: "#172033",
     color: "white",
+    cursor: "pointer",
+  },
+  secondaryButton: {
+    padding: "10px 14px",
+    borderRadius: "10px",
+    border: "1px solid #d9e0ea",
+    background: "white",
+    color: "#172033",
     cursor: "pointer",
   },
   dangerButton: {
