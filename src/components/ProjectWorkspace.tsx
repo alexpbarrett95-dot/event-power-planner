@@ -1,3 +1,4 @@
+import { PowerPlannerApp } from "@/components/PowerPlannerApp";
 import type { Project, ProjectData } from "@/types/project";
 
 type ProjectWorkspaceProps = {
@@ -6,6 +7,7 @@ type ProjectWorkspaceProps = {
   setProjectData: (data: ProjectData) => void;
   saveProject: () => void;
   backToProjects: () => void;
+  saveStatus: string;
 };
 
 export function ProjectWorkspace({
@@ -14,6 +16,7 @@ export function ProjectWorkspace({
   setProjectData,
   saveProject,
   backToProjects,
+  saveStatus,
 }: ProjectWorkspaceProps) {
   return (
     <main style={styles.page}>
@@ -21,7 +24,8 @@ export function ProjectWorkspace({
         <div style={styles.headerRow}>
           <div>
             <h1>{activeProject.name}</h1>
-            <p style={styles.muted}>Project workspace</p>
+            <p style={styles.muted}>Project container</p>
+            <p style={styles.saveStatus}>{saveStatus}</p>
           </div>
 
           <div style={styles.row}>
@@ -29,40 +33,22 @@ export function ProjectWorkspace({
               Back to Projects
             </button>
             <button style={styles.button} onClick={saveProject}>
-              Save Project
+              Save Now
             </button>
           </div>
         </div>
 
         <hr style={styles.divider} />
 
-        <label style={styles.label}>
-          System Name
-          <input
-            style={styles.input}
-            value={projectData.systemName}
-            onChange={(event) =>
-              setProjectData({
-                ...projectData,
-                systemName: event.target.value,
-              })
-            }
-          />
-        </label>
-
-        <label style={styles.label}>
-          Notes
-          <textarea
-            style={styles.textarea}
-            value={projectData.notes}
-            onChange={(event) =>
-              setProjectData({
-                ...projectData,
-                notes: event.target.value,
-              })
-            }
-          />
-        </label>
+        <PowerPlannerApp
+          plannerState={projectData.plannerState}
+          setPlannerState={(plannerState) =>
+            setProjectData({
+              ...projectData,
+              plannerState,
+            })
+          }
+        />
       </section>
     </main>
   );
@@ -76,7 +62,7 @@ const styles: Record<string, React.CSSProperties> = {
     background: "#f5f7fb",
   },
   wideCard: {
-    maxWidth: "900px",
+    maxWidth: "1200px",
     margin: "0 auto",
     background: "white",
     padding: "24px",
@@ -86,25 +72,10 @@ const styles: Record<string, React.CSSProperties> = {
   muted: {
     color: "#637083",
   },
-  label: {
-    display: "block",
-    marginTop: "12px",
-    marginBottom: "12px",
-  },
-  input: {
-    width: "100%",
-    padding: "10px",
-    marginTop: "6px",
-    borderRadius: "10px",
-    border: "1px solid #d9e0ea",
-  },
-  textarea: {
-    width: "100%",
-    minHeight: "120px",
-    padding: "10px",
-    marginTop: "6px",
-    borderRadius: "10px",
-    border: "1px solid #d9e0ea",
+  saveStatus: {
+    color: "#637083",
+    fontSize: "13px",
+    marginTop: "4px",
   },
   row: {
     display: "flex",

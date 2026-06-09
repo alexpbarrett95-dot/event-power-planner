@@ -26,6 +26,8 @@ export default function Home() {
   const [projectData, setProjectData] =
     useState<ProjectData>(emptyProjectData);
 
+  const [saveStatus, setSaveStatus] = useState("Not saved yet");
+
   async function signUp() {
     const { error } = await supabase.auth.signUp({ email, password });
 
@@ -54,6 +56,7 @@ export default function Home() {
     setProjects([]);
     setActiveProject(null);
     setProjectData(emptyProjectData);
+    setSaveStatus("Not saved yet");
   }
 
   async function loadProjects(currentUser: User) {
@@ -129,6 +132,7 @@ export default function Home() {
     if (activeProject?.id === projectId) {
       setActiveProject(null);
       setProjectData(emptyProjectData);
+      setSaveStatus("Not saved yet");
     }
 
     if (user) {
@@ -138,6 +142,7 @@ export default function Home() {
 
   async function openProject(project: Project) {
     setActiveProject(project);
+    setSaveStatus("Loading project...");
 
     const { data, error } = await supabase
       .from("project_data")
@@ -147,6 +152,7 @@ export default function Home() {
 
     if (error) {
       alert(error.message);
+      setSaveStatus("Load failed");
       return;
     }
 
@@ -162,18 +168,25 @@ export default function Home() {
 
       if (createDataError) {
         alert(createDataError.message);
+        setSaveStatus("Load failed");
         return;
       }
 
       setProjectData(emptyProjectData);
+      setSaveStatus("Loaded");
       return;
     }
 
-    setProjectData((data.data as ProjectData) ?? emptyProjectData);
+    const savedData = data.data as ProjectData;
+
+    setProjectData(savedData?.plannerState ? savedData : emptyProjectData);
+    setSaveStatus("Loaded");
   }
 
   async function saveProject() {
     if (!activeProject) return;
+
+    setSaveStatus("Saving...");
 
     const { error } = await supabase
       .from("project_data")
@@ -185,11 +198,24 @@ export default function Home() {
 
     if (error) {
       alert(error.message);
+      setSaveStatus("Save failed");
       return;
     }
 
-    alert("Project saved.");
+    setSaveStatus(`Saved ${new Date().toLocaleTimeString()}`);
   }
+
+  useEffect(() => {
+    if (!activeProject) return;
+
+    setSaveStatus("Unsaved changes");
+
+    const timeout = setTimeout(() => {
+      saveProject();
+    }, 1000);
+
+    return () => clearTimeout(timeout);
+  }, [projectData]);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -238,6 +264,7 @@ export default function Home() {
         setProjectData={setProjectData}
         saveProject={saveProject}
         backToProjects={() => setActiveProject(null)}
+        saveStatus={saveStatus}
       />
     );
   }
