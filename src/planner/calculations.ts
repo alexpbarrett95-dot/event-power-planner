@@ -48,6 +48,10 @@ export type SystemLoadSummary = {
   health: ValidationSeverity;
 };
 
+export function isThreePhaseConnection(connection: string) {
+  return connection.includes("/ 3") || connection.includes("/3");
+}
+
 export function wattsToAmps(watts: number) {
   return watts / 230;
 }
@@ -148,26 +152,30 @@ export function validateOutput(
 ): ValidationIssue[] {
   const issues: ValidationIssue[] = [];
 
-  if (output.phase === "Socapex") {
-    return issues;
-  }
+  if (output.phase === "Socapex") return issues;
 
   const amps =
-    output.phase === "3Φ" ? outputPhaseLoads(output).L1 : outputWatts(output) / 230;
+    output.phase === "3Φ"
+      ? outputPhaseLoads(output).L1
+      : outputWatts(output) / 230;
 
   if (amps > output.rating) {
     issues.push({
       id: `${output.id}-overload`,
       severity: "critical",
       context,
-      message: `${context} is overloaded: ${formatAmps(amps)} / ${formatAmps(output.rating)}.`,
+      message: `${context} is overloaded: ${formatAmps(amps)} / ${formatAmps(
+        output.rating
+      )}.`,
     });
   } else if (amps > output.rating * 0.8) {
     issues.push({
       id: `${output.id}-near-limit`,
       severity: "warning",
       context,
-      message: `${context} is above 80% capacity: ${formatAmps(amps)} / ${formatAmps(output.rating)}.`,
+      message: `${context} is above 80% capacity: ${formatAmps(
+        amps
+      )} / ${formatAmps(output.rating)}.`,
     });
   }
 
@@ -185,7 +193,9 @@ export function validateDistro(distro: ProjectDistro): ValidationIssue[] {
 
     if (output.phase === "Socapex") {
       (output.socaCircuits ?? []).forEach((socket) => {
-        issues.push(...validateOutput(socket, `${outputContext} / ${socket.label}`));
+        issues.push(
+          ...validateOutput(socket, `${outputContext} / ${socket.label}`)
+        );
       });
       return;
     }
@@ -193,27 +203,29 @@ export function validateDistro(distro: ProjectDistro): ValidationIssue[] {
     issues.push(...validateOutput(output, outputContext));
   });
 
-  const loads = distroPhaseLoads(distro);
-  const imbalance = phaseImbalance(loads);
+  if (isThreePhaseConnection(distro.input)) {
+    const loads = distroPhaseLoads(distro);
+    const imbalance = phaseImbalance(loads);
 
-  if (imbalance >= 50 && maxPhase(loads) > 5) {
-    issues.push({
-      id: `${distro.id}-phase-imbalance-critical`,
-      severity: "critical",
-      context: displayDistroName(distro),
-      message: `Severe phase imbalance on ${displayDistroName(distro)}: ${Math.round(
-        imbalance
-      )}%.`,
-    });
-  } else if (imbalance >= 30 && maxPhase(loads) > 5) {
-    issues.push({
-      id: `${distro.id}-phase-imbalance-warning`,
-      severity: "warning",
-      context: displayDistroName(distro),
-      message: `Phase imbalance on ${displayDistroName(distro)}: ${Math.round(
-        imbalance
-      )}%.`,
-    });
+    if (imbalance >= 50 && maxPhase(loads) > 5) {
+      issues.push({
+        id: `${distro.id}-phase-imbalance-critical`,
+        severity: "critical",
+        context: displayDistroName(distro),
+        message: `Severe phase imbalance on ${displayDistroName(
+          distro
+        )}: ${Math.round(imbalance)}%.`,
+      });
+    } else if (imbalance >= 30 && maxPhase(loads) > 5) {
+      issues.push({
+        id: `${distro.id}-phase-imbalance-warning`,
+        severity: "warning",
+        context: displayDistroName(distro),
+        message: `Phase imbalance on ${displayDistroName(distro)}: ${Math.round(
+          imbalance
+        )}%.`,
+      });
+    }
   }
 
   return issues;
@@ -222,12 +234,17 @@ export function validateDistro(distro: ProjectDistro): ValidationIssue[] {
 export function validateSource(
   sourceId: string,
   sourceName: string,
+  sourceConnection: string,
   sourceRating: number,
   loads: PhaseLoads
 ): ValidationIssue[] {
   const issues: ValidationIssue[] = [];
 
-  (["L1", "L2", "L3"] as const).forEach((phase) => {
+  const phasesToValidate = isThreePhaseConnection(sourceConnection)
+    ? (["L1", "L2", "L3"] as const)
+    : (["L1"] as const);
+
+  phasesToValidate.forEach((phase) => {
     const amps = loads[phase];
 
     if (amps > sourceRating) {
@@ -251,24 +268,26 @@ export function validateSource(
     }
   });
 
-  const imbalance = phaseImbalance(loads);
+  if (isThreePhaseConnection(sourceConnection)) {
+    const imbalance = phaseImbalance(loads);
 
-  if (imbalance >= 50 && maxPhase(loads) > 5) {
-    issues.push({
-      id: `${sourceId}-phase-imbalance-critical`,
-      severity: "critical",
-      context: sourceName,
-      message: `Severe phase imbalance on ${sourceName}: ${Math.round(
-        imbalance
-      )}%.`,
-    });
-  } else if (imbalance >= 30 && maxPhase(loads) > 5) {
-    issues.push({
-      id: `${sourceId}-phase-imbalance-warning`,
-      severity: "warning",
-      context: sourceName,
-      message: `Phase imbalance on ${sourceName}: ${Math.round(imbalance)}%.`,
-    });
+    if (imbalance >= 50 && maxPhase(loads) > 5) {
+      issues.push({
+        id: `${sourceId}-phase-imbalance-critical`,
+        severity: "critical",
+        context: sourceName,
+        message: `Severe phase imbalance on ${sourceName}: ${Math.round(
+          imbalance
+        )}%.`,
+      });
+    } else if (imbalance >= 30 && maxPhase(loads) > 5) {
+      issues.push({
+        id: `${sourceId}-phase-imbalance-warning`,
+        severity: "warning",
+        context: sourceName,
+        message: `Phase imbalance on ${sourceName}: ${Math.round(imbalance)}%.`,
+      });
+    }
   }
 
   return issues;
@@ -305,6 +324,7 @@ export function systemLoadSummary(
       const sourceIssues = validateSource(
         source.id,
         source.name,
+        source.conn,
         source.rating,
         phaseLoads
       );
@@ -346,12 +366,19 @@ export function systemLoadSummary(
       id: `${distro.distro.id}-unassigned`,
       severity: "warning" as const,
       context: displayDistroName(distro.distro),
-      message: `${displayDistroName(distro.distro)} has no assigned power source.`,
+      message: `${displayDistroName(
+        distro.distro
+      )} has no assigned power source.`,
     })),
   ];
 
-  const warningCount = issues.filter((issue) => issue.severity === "warning").length;
-  const criticalCount = issues.filter((issue) => issue.severity === "critical").length;
+  const warningCount = issues.filter(
+    (issue) => issue.severity === "warning"
+  ).length;
+
+  const criticalCount = issues.filter(
+    (issue) => issue.severity === "critical"
+  ).length;
 
   return {
     totalDistros: plannerState.distros.length,
