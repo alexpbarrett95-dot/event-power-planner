@@ -3,6 +3,7 @@ import { DistroEditorTab } from "@/components/planner/DistroEditorTab";
 import { DistroOverviewTab } from "@/components/planner/DistroOverviewTab";
 import { PowerSourcesTab } from "@/components/planner/PowerSourcesTab";
 import { SystemOverviewTab } from "@/components/planner/SystemOverviewTab";
+import { CustomEquipmentTab } from "@/components/planner/CustomEquipmentTab";
 import type { PlannerState } from "@/planner/types";
 
 type PlannerShellProps = {
@@ -93,10 +94,10 @@ export function PlannerShell({
       )}
 
       {activeTab === "Custom Equipment" && (
-        <section style={styles.card}>
-          <h2>Custom Equipment</h2>
-          <p style={styles.muted}>Custom equipment tools will go here.</p>
-        </section>
+        <CustomEquipmentTab
+          plannerState={plannerState}
+          setPlannerState={setPlannerState}
+        />
       )}
 
       {activeTab === "Custom Distros" && (
