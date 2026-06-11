@@ -1,3 +1,4 @@
+import { autoSourceId } from "@/planner/autoSources";
 import type { PlannerOutput, PlannerState, ProjectDistro } from "@/planner/types";
 
 export type PhaseLoads = {
@@ -21,6 +22,7 @@ export type DistroLoadSummary = {
   amps: number;
   phaseLoads: PhaseLoads;
   issues: ValidationIssue[];
+  children: DistroLoadSummary[];
 };
 
 export type SourceLoadSummary = {
@@ -48,20 +50,16 @@ export type SystemLoadSummary = {
   health: ValidationSeverity;
 };
 
-export function isThreePhaseConnection(connection: string) {
+export function isThreePhaseConnection(connection: string): boolean {
   return connection.includes("/ 3") || connection.includes("/3");
 }
 
-export function wattsToAmps(watts: number) {
+export function wattsToAmps(watts: number): number {
   return watts / 230;
 }
 
 export function createEmptyPhaseLoads(): PhaseLoads {
-  return {
-    L1: 0,
-    L2: 0,
-    L3: 0,
-  };
+  return { L1: 0, L2: 0, L3: 0 };
 }
 
 export function addPhaseLoads(a: PhaseLoads, b: PhaseLoads): PhaseLoads {
@@ -72,15 +70,40 @@ export function addPhaseLoads(a: PhaseLoads, b: PhaseLoads): PhaseLoads {
   };
 }
 
-export function outputWatts(output: PlannerOutput) {
+export function phaseLoadTotal(loads: PhaseLoads): number {
+  return loads.L1 + loads.L2 + loads.L3;
+}
+
+export function outputOwnWatts(output: PlannerOutput): number {
   return output.items.reduce(
     (total, item) => total + item.watts * item.quantity,
     0
   );
 }
 
-export function outputPhaseLoads(output: PlannerOutput): PhaseLoads {
-  const watts = outputWatts(output);
+export function outputWatts(
+  output: PlannerOutput,
+  plannerState?: PlannerState,
+  parentDistro?: ProjectDistro,
+  visited: Set<string> = new Set()
+): number {
+  const ownWatts = outputOwnWatts(output);
+
+  if (!plannerState || !parentDistro) return ownWatts;
+
+  const childDistro = childDistroFedFromOutput(
+    plannerState,
+    parentDistro.id,
+    output.id
+  );
+
+  if (!childDistro || visited.has(childDistro.id)) return ownWatts;
+
+  return ownWatts + distroWatts(childDistro, plannerState, new Set(visited));
+}
+
+export function outputOwnPhaseLoads(output: PlannerOutput): PhaseLoads {
+  const watts = outputOwnWatts(output);
   const amps = wattsToAmps(watts);
 
   if (output.phase === "L1") return { L1: amps, L2: 0, L3: 0 };
@@ -95,29 +118,94 @@ export function outputPhaseLoads(output: PlannerOutput): PhaseLoads {
   return createEmptyPhaseLoads();
 }
 
+export function outputPhaseLoads(
+  output: PlannerOutput,
+  plannerState?: PlannerState,
+  parentDistro?: ProjectDistro,
+  visited: Set<string> = new Set()
+): PhaseLoads {
+  let loads = outputOwnPhaseLoads(output);
+
+  if (!plannerState || !parentDistro) return loads;
+
+  const childDistro = childDistroFedFromOutput(
+    plannerState,
+    parentDistro.id,
+    output.id
+  );
+
+  if (!childDistro || visited.has(childDistro.id)) return loads;
+
+  const childLoads = distroPhaseLoads(childDistro, plannerState, new Set(visited));
+
+  if (output.phase === "3Φ") {
+    return addPhaseLoads(loads, childLoads);
+  }
+
+  const childTotal = phaseLoadTotal(childLoads);
+
+  if (output.phase === "L1") {
+    loads = addPhaseLoads(loads, { L1: childTotal, L2: 0, L3: 0 });
+  }
+
+  if (output.phase === "L2") {
+    loads = addPhaseLoads(loads, { L1: 0, L2: childTotal, L3: 0 });
+  }
+
+  if (output.phase === "L3") {
+    loads = addPhaseLoads(loads, { L1: 0, L2: 0, L3: childTotal });
+  }
+
+  return loads;
+}
+
 export function socapexOutputPhaseLoads(output: PlannerOutput): PhaseLoads {
   return (output.socaCircuits ?? []).reduce(
-    (total, socket) => addPhaseLoads(total, outputPhaseLoads(socket)),
+    (total, socket) => addPhaseLoads(total, outputOwnPhaseLoads(socket)),
     createEmptyPhaseLoads()
   );
 }
 
-export function distroPhaseLoads(distro: ProjectDistro): PhaseLoads {
-  return distro.outputs.reduce((total, output) => {
+export function distroPhaseLoads(
+  distro: ProjectDistro,
+  plannerState?: PlannerState,
+  visited: Set<string> = new Set()
+): PhaseLoads {
+  if (visited.has(distro.id)) return createEmptyPhaseLoads();
+
+  const nextVisited = new Set(visited);
+  nextVisited.add(distro.id);
+
+  return distro.outputs.reduce<PhaseLoads>((total, output) => {
     if (output.phase === "Socapex") {
       return addPhaseLoads(total, socapexOutputPhaseLoads(output));
     }
 
-    return addPhaseLoads(total, outputPhaseLoads(output));
+    return addPhaseLoads(
+      total,
+      outputPhaseLoads(output, plannerState, distro, nextVisited)
+    );
   }, createEmptyPhaseLoads());
 }
 
-export function distroWatts(distro: ProjectDistro) {
-  return distro.outputs.reduce((total, output) => {
-    const mainOutputWatts = outputWatts(output);
+export function distroWatts(
+  distro: ProjectDistro,
+  plannerState?: PlannerState,
+  visited: Set<string> = new Set()
+): number {
+  if (visited.has(distro.id)) return 0;
 
-    const socapexWatts = (output.socaCircuits ?? []).reduce(
-      (socketTotal, socket) => socketTotal + outputWatts(socket),
+  const nextVisited = new Set(visited);
+  nextVisited.add(distro.id);
+
+  return distro.outputs.reduce<number>((total, output) => {
+    const mainOutputWatts: number =
+      output.phase === "Socapex"
+        ? 0
+        : outputWatts(output, plannerState, distro, nextVisited);
+
+    const socapexWatts: number = (output.socaCircuits ?? []).reduce<number>(
+      (socketTotal, socket) => socketTotal + outputOwnWatts(socket),
       0
     );
 
@@ -125,19 +213,34 @@ export function distroWatts(distro: ProjectDistro) {
   }, 0);
 }
 
-export function phaseLoadTotal(loads: PhaseLoads) {
-  return loads.L1 + loads.L2 + loads.L3;
+export function childDistroFedFromOutput(
+  plannerState: PlannerState,
+  parentDistroId: string,
+  outputId: string
+): ProjectDistro | undefined {
+  const sourceId = autoSourceId(parentDistroId, outputId);
+
+  return plannerState.distros.find((distro) => distro.sourceId === sourceId);
 }
 
-export function maxPhase(loads: PhaseLoads) {
+export function childDistrosForDistro(
+  plannerState: PlannerState,
+  distro: ProjectDistro
+): ProjectDistro[] {
+  return distro.outputs
+    .map((output) => childDistroFedFromOutput(plannerState, distro.id, output.id))
+    .filter((distro): distro is ProjectDistro => Boolean(distro));
+}
+
+export function maxPhase(loads: PhaseLoads): number {
   return Math.max(loads.L1, loads.L2, loads.L3);
 }
 
-export function minPhase(loads: PhaseLoads) {
+export function minPhase(loads: PhaseLoads): number {
   return Math.min(loads.L1, loads.L2, loads.L3);
 }
 
-export function phaseImbalance(loads: PhaseLoads) {
+export function phaseImbalance(loads: PhaseLoads): number {
   const max = maxPhase(loads);
   const min = minPhase(loads);
 
@@ -148,41 +251,48 @@ export function phaseImbalance(loads: PhaseLoads) {
 
 export function validateOutput(
   output: PlannerOutput,
-  context: string
+  context: string,
+  plannerState?: PlannerState,
+  parentDistro?: ProjectDistro
 ): ValidationIssue[] {
-  const issues: ValidationIssue[] = [];
+  if (output.phase === "Socapex") return [];
 
-  if (output.phase === "Socapex") return issues;
-
-  const amps =
-    output.phase === "3Φ"
-      ? outputPhaseLoads(output).L1
-      : outputWatts(output) / 230;
+  const loads = outputPhaseLoads(output, plannerState, parentDistro);
+  const amps = output.phase === "3Φ" ? loads.L1 : phaseLoadTotal(loads);
 
   if (amps > output.rating) {
-    issues.push({
-      id: `${output.id}-overload`,
-      severity: "critical",
-      context,
-      message: `${context} is overloaded: ${formatAmps(amps)} / ${formatAmps(
-        output.rating
-      )}.`,
-    });
-  } else if (amps > output.rating * 0.8) {
-    issues.push({
-      id: `${output.id}-near-limit`,
-      severity: "warning",
-      context,
-      message: `${context} is above 80% capacity: ${formatAmps(
-        amps
-      )} / ${formatAmps(output.rating)}.`,
-    });
+    return [
+      {
+        id: `${output.id}-overload`,
+        severity: "critical",
+        context,
+        message: `${context} is overloaded: ${formatAmps(amps)} / ${formatAmps(
+          output.rating
+        )}.`,
+      },
+    ];
   }
 
-  return issues;
+  if (amps > output.rating * 0.8) {
+    return [
+      {
+        id: `${output.id}-near-limit`,
+        severity: "warning",
+        context,
+        message: `${context} is above 80% capacity: ${formatAmps(
+          amps
+        )} / ${formatAmps(output.rating)}.`,
+      },
+    ];
+  }
+
+  return [];
 }
 
-export function validateDistro(distro: ProjectDistro): ValidationIssue[] {
+export function validateDistro(
+  distro: ProjectDistro,
+  plannerState?: PlannerState
+): ValidationIssue[] {
   const issues: ValidationIssue[] = [];
 
   distro.outputs.forEach((output, outputIndex) => {
@@ -200,11 +310,11 @@ export function validateDistro(distro: ProjectDistro): ValidationIssue[] {
       return;
     }
 
-    issues.push(...validateOutput(output, outputContext));
+    issues.push(...validateOutput(output, outputContext, plannerState, distro));
   });
 
   if (isThreePhaseConnection(distro.input)) {
-    const loads = distroPhaseLoads(distro);
+    const loads = distroPhaseLoads(distro, plannerState);
     const imbalance = phaseImbalance(loads);
 
     if (imbalance >= 50 && maxPhase(loads) > 5) {
@@ -240,11 +350,11 @@ export function validateSource(
 ): ValidationIssue[] {
   const issues: ValidationIssue[] = [];
 
-  const phasesToValidate = isThreePhaseConnection(sourceConnection)
+  const phases = isThreePhaseConnection(sourceConnection)
     ? (["L1", "L2", "L3"] as const)
     : (["L1"] as const);
 
-  phasesToValidate.forEach((phase) => {
+  phases.forEach((phase) => {
     const amps = loads[phase];
 
     if (amps > sourceRating) {
@@ -293,75 +403,85 @@ export function validateSource(
   return issues;
 }
 
-export function distroLoadSummary(distro: ProjectDistro): DistroLoadSummary {
-  const phaseLoads = distroPhaseLoads(distro);
+export function distroLoadSummary(
+  distro: ProjectDistro,
+  plannerState?: PlannerState,
+  visited: Set<string> = new Set()
+): DistroLoadSummary {
+  const nextVisited = new Set(visited);
+  nextVisited.add(distro.id);
+
+  const children = plannerState
+    ? childDistrosForDistro(plannerState, distro)
+        .filter((child) => !visited.has(child.id))
+        .map((child) => distroLoadSummary(child, plannerState, nextVisited))
+    : [];
+
+  const phaseLoads = distroPhaseLoads(distro, plannerState);
 
   return {
     distro,
-    watts: distroWatts(distro),
+    watts: distroWatts(distro, plannerState),
     amps: phaseLoadTotal(phaseLoads),
     phaseLoads,
-    issues: validateDistro(distro),
+    issues: validateDistro(distro, plannerState),
+    children,
   };
 }
 
-export function systemLoadSummary(
-  plannerState: PlannerState
-): SystemLoadSummary {
-  const sourceSummaries: SourceLoadSummary[] = plannerState.sources.map(
-    (source) => {
-      const distros = plannerState.distros
-        .filter((distro) => distro.sourceId === source.id)
-        .map(distroLoadSummary);
+export function flattenDistroIssues(summary: DistroLoadSummary): ValidationIssue[] {
+  return [
+    ...summary.issues,
+    ...summary.children.flatMap((child) => flattenDistroIssues(child)),
+  ];
+}
 
-      const phaseLoads = distros.reduce(
-        (total, distro) => addPhaseLoads(total, distro.phaseLoads),
-        createEmptyPhaseLoads()
-      );
+export function systemLoadSummary(plannerState: PlannerState): SystemLoadSummary {
+  const manualSources = plannerState.sources.filter((source) => !source.auto);
 
-      const watts = distros.reduce((total, distro) => total + distro.watts, 0);
+  const sourceSummaries: SourceLoadSummary[] = manualSources.map((source) => {
+    const distros = plannerState.distros
+      .filter((distro) => distro.sourceId === source.id)
+      .map((distro) => distroLoadSummary(distro, plannerState));
 
-      const sourceIssues = validateSource(
-        source.id,
-        source.name,
-        source.conn,
-        source.rating,
-        phaseLoads
-      );
+    const phaseLoads = distros.reduce<PhaseLoads>(
+      (total, distro) => addPhaseLoads(total, distro.phaseLoads),
+      createEmptyPhaseLoads()
+    );
 
-      const distroIssues = distros.flatMap((distro) => distro.issues);
+    const watts = distros.reduce<number>(
+      (total, distro) => total + distro.watts,
+      0
+    );
 
-      return {
-        sourceId: source.id,
-        sourceName: source.name,
-        sourceConnection: source.conn,
-        sourceRating: source.rating,
-        watts,
-        amps: phaseLoadTotal(phaseLoads),
-        phaseLoads,
-        distros,
-        issues: [...sourceIssues, ...distroIssues],
-      };
-    }
-  );
+    const sourceIssues = validateSource(
+      source.id,
+      source.name,
+      source.conn,
+      source.rating,
+      phaseLoads
+    );
+
+    return {
+      sourceId: source.id,
+      sourceName: source.name,
+      sourceConnection: source.conn,
+      sourceRating: source.rating,
+      watts,
+      amps: phaseLoadTotal(phaseLoads),
+      phaseLoads,
+      distros,
+      issues: [...sourceIssues, ...distros.flatMap(flattenDistroIssues)],
+    };
+  });
 
   const unassignedDistros = plannerState.distros
     .filter((distro) => !distro.sourceId)
-    .map(distroLoadSummary);
-
-  const connectedWatts = sourceSummaries.reduce(
-    (total, source) => total + source.watts,
-    0
-  );
-
-  const connectedAmps = sourceSummaries.reduce(
-    (total, source) => total + source.amps,
-    0
-  );
+    .map((distro) => distroLoadSummary(distro, plannerState));
 
   const issues = [
     ...sourceSummaries.flatMap((source) => source.issues),
-    ...unassignedDistros.flatMap((distro) => distro.issues),
+    ...unassignedDistros.flatMap(flattenDistroIssues),
     ...unassignedDistros.map((distro) => ({
       id: `${distro.distro.id}-unassigned`,
       severity: "warning" as const,
@@ -382,9 +502,15 @@ export function systemLoadSummary(
 
   return {
     totalDistros: plannerState.distros.length,
-    manualPowerSources: plannerState.sources.length,
-    connectedWatts,
-    connectedAmps,
+    manualPowerSources: manualSources.length,
+    connectedWatts: sourceSummaries.reduce<number>(
+      (total, source) => total + source.watts,
+      0
+    ),
+    connectedAmps: sourceSummaries.reduce<number>(
+      (total, source) => total + source.amps,
+      0
+    ),
     sourceSummaries,
     unassignedDistros,
     issues,
@@ -394,26 +520,26 @@ export function systemLoadSummary(
   };
 }
 
-export function formatWatts(value: number) {
+export function formatWatts(value: number): string {
   return `${Math.round(value).toLocaleString()} W`;
 }
 
-export function formatAmps(value: number) {
+export function formatAmps(value: number): string {
   return `${value.toFixed(1)} A`;
 }
 
-export function phasePercentage(amps: number, rating: number) {
+export function phasePercentage(amps: number, rating: number): number {
   if (!rating) return 0;
   return Math.round((amps / rating) * 100);
 }
 
-export function displayDistroName(distro: { instanceName: string; name: string }) {
+export function displayDistroName(distro: { instanceName: string; name: string }): string {
   return distro.instanceName.trim()
     ? `${distro.instanceName} - ${distro.name}`
     : distro.name;
 }
 
-export function outputDisplayName(output: PlannerOutput, index: number) {
+export function outputDisplayName(output: PlannerOutput, index: number): string {
   if (output.displayName) return output.displayName;
   if (output.phase === "Socapex") return `Soca ${output.outputNumber ?? index + 1}`;
   if (output.phase === "3Φ") return `${index + 1} - ${output.rating}/3`;

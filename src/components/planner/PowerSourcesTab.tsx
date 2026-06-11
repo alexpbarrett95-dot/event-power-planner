@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { PlannerState, PowerSource } from "@/types/project";
+import type { PlannerState, PowerSource } from "@/planner/types";
 
 type PowerSourcesTabProps = {
   plannerState: PlannerState;
@@ -35,6 +35,9 @@ export function PowerSourcesTab({
   const [sourceType, setSourceType] = useState("125A / 3");
   const [sourceNotes, setSourceNotes] = useState("");
 
+  const manualSources = plannerState.sources.filter((source) => !source.auto);
+  const autoSources = plannerState.sources.filter((source) => source.auto);
+
   function addPowerSource() {
     const newSource: PowerSource = {
       id: createId("source"),
@@ -42,6 +45,8 @@ export function PowerSourcesTab({
       conn: sourceType,
       rating: sourceRating(sourceType),
       notes: sourceNotes.trim(),
+      auto: false,
+      phaseType: sourceType.includes("/ 3") ? "Three-Phase" : "Single-Phase",
     };
 
     setPlannerState({
@@ -67,7 +72,7 @@ export function PowerSourcesTab({
     <section style={styles.card}>
       <h2>Power Sources</h2>
       <p style={styles.muted}>
-        Add manually supplied power sources for this system.
+        Manual sources are venue supplies or generators. Auto sources are created from distro outputs.
       </p>
 
       <div style={styles.formGrid}>
@@ -117,7 +122,7 @@ export function PowerSourcesTab({
       </label>
 
       <button style={styles.button} onClick={addPowerSource}>
-        Add Power Source
+        Add Manual Power Source
       </button>
 
       <hr style={styles.divider} />
@@ -125,15 +130,15 @@ export function PowerSourcesTab({
       <h3>Manual Power Sources</h3>
 
       <div style={styles.list}>
-        {plannerState.sources.length === 0 ? (
+        {manualSources.length === 0 ? (
           <p style={styles.muted}>No manual power sources added yet.</p>
         ) : (
-          plannerState.sources.map((source) => (
+          manualSources.map((source) => (
             <div key={source.id} style={styles.sourceCard}>
               <div>
                 <strong>{source.name}</strong>
                 <p style={styles.muted}>
-                  {source.conn} · {source.rating}A per phase
+                  {source.conn} · {source.rating}A
                 </p>
                 {source.notes && <p style={styles.notes}>{source.notes}</p>}
               </div>
@@ -144,6 +149,30 @@ export function PowerSourcesTab({
               >
                 Delete
               </button>
+            </div>
+          ))
+        )}
+      </div>
+
+      <hr style={styles.divider} />
+
+      <h3>Auto-Created Power Sources</h3>
+
+      <div style={styles.list}>
+        {autoSources.length === 0 ? (
+          <p style={styles.muted}>
+            No auto-created sources yet. Add distros with 32A+ outputs.
+          </p>
+        ) : (
+          autoSources.map((source) => (
+            <div key={source.id} style={styles.autoSourceCard}>
+              <div>
+                <strong>{source.name}</strong>
+                <p style={styles.muted}>
+                  {source.conn} · {source.rating}A · Auto-created
+                </p>
+                {source.notes && <p style={styles.notes}>{source.notes}</p>}
+              </div>
             </div>
           ))
         )}
@@ -223,6 +252,12 @@ const styles: Record<string, React.CSSProperties> = {
     gap: "12px",
     alignItems: "center",
     background: "#f8fafc",
+  },
+  autoSourceCard: {
+    border: "1px dashed #93c5fd",
+    borderRadius: "14px",
+    padding: "14px",
+    background: "#eff6ff",
   },
   notes: {
     margin: "6px 0 0",

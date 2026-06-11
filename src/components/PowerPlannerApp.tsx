@@ -1,5 +1,5 @@
 import { PlannerShell } from "@/components/planner/PlannerShell";
-import type { PlannerState } from "@/types/project";
+import type { PlannerState } from "@/planner/types";
 
 type PowerPlannerAppProps = {
   plannerState: PlannerState;
