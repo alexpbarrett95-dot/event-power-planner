@@ -6,6 +6,7 @@ import type {
   PlannerOutput,
   PlannerOutputItem,
   PlannerState,
+  PowerSource,
   ProjectDistro,
 } from "@/planner/types";
 
@@ -21,6 +22,10 @@ type DraggedEquipment = {
 
 function createId(prefix: string) {
   return `${prefix}_${Math.random().toString(36).slice(2, 10)}`;
+}
+
+function autoSourceId(parentDistroId: string, outputId: string) {
+  return `auto_${parentDistroId}_${outputId}`;
 }
 
 function displayDistroName(distro: ProjectDistro) {
@@ -99,6 +104,18 @@ function readDragPayload(event: DragEvent): DraggedEquipment | null {
   }
 }
 
+function normaliseConnection(value: string) {
+  return value.replace(/\s+/g, "").toLowerCase();
+}
+
+function outputCanFeedDistro(output: PlannerOutput) {
+  return output.phase !== "Socapex";
+}
+
+function outputSourceConnection(output: PlannerOutput) {
+  return output.type;
+}
+
 export function DistroEditorTab({
   plannerState,
   setPlannerState,
@@ -140,8 +157,22 @@ export function DistroEditorTab({
     return matchesCategory && matchesSearch;
   });
 
-  function updateDistro(updatedDistro: ProjectDistro) {
+  function setFullPlannerState(nextState: PlannerState) {
+    const usedSourceIds = new Set(nextState.distros.map((distro) => distro.sourceId));
+
+    const cleanedSources = nextState.sources.filter((source) => {
+      if (!source.auto) return true;
+      return usedSourceIds.has(source.id);
+    });
+
     setPlannerState({
+      ...nextState,
+      sources: cleanedSources,
+    });
+  }
+
+  function updateDistro(updatedDistro: ProjectDistro) {
+    setFullPlannerState({
       ...plannerState,
       active: updatedDistro.id,
       distros: plannerState.distros.map((distro) =>
@@ -305,6 +336,85 @@ export function DistroEditorTab({
     );
   }
 
+  function feedDistroFromOutput(output: PlannerOutput, childDistroId: string) {
+    if (!activeDistro) return;
+
+    const sourceId = autoSourceId(activeDistro.id, output.id);
+
+    const existingAutoSource = plannerState.sources.find(
+      (source) => source.id === sourceId
+    );
+
+    const newAutoSource: PowerSource = {
+      id: sourceId,
+      name: `${displayDistroName(activeDistro)} → ${outputTitle(
+        output,
+        activeDistro.outputs.findIndex((item) => item.id === output.id)
+      )}`,
+      conn: outputSourceConnection(output),
+      rating: output.rating,
+      notes: "Auto-created from distro output feed.",
+      auto: true,
+      parentDistroId: activeDistro.id,
+      parentOutputId: output.id,
+      phaseType: output.phase === "3Φ" ? "Three-Phase" : "Single-Phase",
+    };
+
+    const nextSources = existingAutoSource
+      ? plannerState.sources.map((source) =>
+          source.id === sourceId ? newAutoSource : source
+        )
+      : [...plannerState.sources, newAutoSource];
+
+    const nextDistros = plannerState.distros.map((distro) =>
+      distro.id === childDistroId ? { ...distro, sourceId } : distro
+    );
+
+    setFullPlannerState({
+      ...plannerState,
+      sources: nextSources,
+      distros: nextDistros,
+    });
+  }
+
+  function removeDistroFeedFromOutput(output: PlannerOutput, childDistroId: string) {
+    if (!activeDistro) return;
+
+    const sourceId = autoSourceId(activeDistro.id, output.id);
+
+    setFullPlannerState({
+      ...plannerState,
+      distros: plannerState.distros.map((distro) =>
+        distro.id === childDistroId && distro.sourceId === sourceId
+          ? { ...distro, sourceId: "" }
+          : distro
+      ),
+    });
+  }
+
+  function compatibleDownstreamDistros(output: PlannerOutput) {
+    if (!activeDistro || !outputCanFeedDistro(output)) return [];
+
+    const outputConnection = normaliseConnection(outputSourceConnection(output));
+
+    return plannerState.distros.filter((distro) => {
+      if (distro.id === activeDistro.id) return false;
+
+      return normaliseConnection(distro.input) === outputConnection;
+    });
+  }
+
+  function currentFedDistroId(output: PlannerOutput) {
+    if (!activeDistro) return "";
+
+    const sourceId = autoSourceId(activeDistro.id, output.id);
+
+    return (
+      plannerState.distros.find((distro) => distro.sourceId === sourceId)?.id ??
+      ""
+    );
+  }
+
   if (!activeDistro) {
     return (
       <section style={styles.card}>
@@ -319,7 +429,7 @@ export function DistroEditorTab({
 
   const availableSources = plannerState.sources.filter(
     (source) =>
-      source.conn.replace(/\s+/g, "") === activeDistro.input.replace(/\s+/g, "")
+      normaliseConnection(source.conn) === normaliseConnection(activeDistro.input)
   );
 
   const singlePhaseOutputs = activeDistro.outputs.filter(
@@ -476,6 +586,7 @@ export function DistroEditorTab({
               <option value="">No source selected</option>
               {availableSources.map((source) => (
                 <option key={source.id} value={source.id}>
+                  {source.auto ? "Auto: " : ""}
                   {source.name} — {source.conn}
                 </option>
               ))}
@@ -526,6 +637,16 @@ export function DistroEditorTab({
                             output={output}
                             title={outputTitle(output, outputIndex)}
                             equipmentOptions={equipmentOptions}
+                            compatibleDownstreamDistros={compatibleDownstreamDistros(output)}
+                            currentFedDistroId={currentFedDistroId(output)}
+                            onFeedDistro={(childDistroId) =>
+                              childDistroId
+                                ? feedDistroFromOutput(output, childDistroId)
+                                : removeDistroFeedFromOutput(
+                                    output,
+                                    currentFedDistroId(output)
+                                  )
+                            }
                             onDrop={(event) =>
                               handleOutputDrop(event, output.id)
                             }
@@ -607,6 +728,16 @@ export function DistroEditorTab({
                                   output={socket}
                                   title={socapexSocketTitle(socket)}
                                   equipmentOptions={equipmentOptions}
+                                  compatibleDownstreamDistros={compatibleDownstreamDistros(socket)}
+                                  currentFedDistroId={currentFedDistroId(socket)}
+                                  onFeedDistro={(childDistroId) =>
+                                    childDistroId
+                                      ? feedDistroFromOutput(socket, childDistroId)
+                                      : removeDistroFeedFromOutput(
+                                          socket,
+                                          currentFedDistroId(socket)
+                                        )
+                                  }
                                   onDrop={(event) =>
                                     handleSocapexSocketDrop(
                                       event,
@@ -674,6 +805,16 @@ export function DistroEditorTab({
                     title={outputTitle(output, outputIndex)}
                     equipmentOptions={equipmentOptions}
                     threePhase
+                    compatibleDownstreamDistros={compatibleDownstreamDistros(output)}
+                    currentFedDistroId={currentFedDistroId(output)}
+                    onFeedDistro={(childDistroId) =>
+                      childDistroId
+                        ? feedDistroFromOutput(output, childDistroId)
+                        : removeDistroFeedFromOutput(
+                            output,
+                            currentFedDistroId(output)
+                          )
+                    }
                     onDrop={(event) => handleOutputDrop(event, output.id)}
                     addEquipment={(equipmentId) =>
                       addEquipmentToOutput(output.id, equipmentId)
@@ -698,7 +839,10 @@ type OutputCardProps = {
   output: PlannerOutput;
   title: string;
   equipmentOptions: EquipmentItem[];
+  compatibleDownstreamDistros: ProjectDistro[];
+  currentFedDistroId: string;
   threePhase?: boolean;
+  onFeedDistro: (distroId: string) => void;
   onDrop: (event: DragEvent) => void;
   addEquipment: (equipmentId: string) => void;
   updateQuantity: (itemId: string, quantity: number) => void;
@@ -710,7 +854,10 @@ function OutputCard({
   output,
   title,
   equipmentOptions,
+  compatibleDownstreamDistros,
+  currentFedDistroId,
   threePhase = false,
+  onFeedDistro,
   onDrop,
   addEquipment,
   updateQuantity,
@@ -746,6 +893,24 @@ function OutputCard({
           <div style={styles.phaseMini}>L2: {formatAmps(phaseAmps)}</div>
           <div style={styles.phaseMini}>L3: {formatAmps(phaseAmps)}</div>
         </div>
+      )}
+
+      {compatibleDownstreamDistros.length > 0 && (
+        <label style={styles.feedLabel}>
+          Feed Distro From This Output
+          <select
+            style={styles.input}
+            value={currentFedDistroId}
+            onChange={(event) => onFeedDistro(event.target.value)}
+          >
+            <option value="">No downstream distro</option>
+            {compatibleDownstreamDistros.map((distro) => (
+              <option key={distro.id} value={distro.id}>
+                {displayDistroName(distro)} — {distro.input}
+              </option>
+            ))}
+          </select>
+        </label>
       )}
 
       <div style={styles.addEquipmentRow}>
@@ -877,6 +1042,17 @@ const styles: Record<string, React.CSSProperties> = {
     marginBottom: "12px",
     color: "#637083",
     fontWeight: 700,
+  },
+  feedLabel: {
+    display: "block",
+    marginTop: "10px",
+    color: "#172033",
+    fontWeight: 800,
+    fontSize: "12px",
+    border: "1px dashed #93c5fd",
+    borderRadius: "12px",
+    padding: "10px",
+    background: "#eff6ff",
   },
   smallLabel: {
     display: "block",

@@ -1,10 +1,15 @@
 import {
+  displayDistroName,
   formatAmps,
   formatWatts,
   phasePercentage,
   systemLoadSummary,
 } from "@/planner/calculations";
-import type { PhaseLoads, ValidationIssue } from "@/planner/calculations";
+import type {
+  DistroLoadSummary,
+  PhaseLoads,
+  ValidationIssue,
+} from "@/planner/calculations";
 import type { PlannerState } from "@/planner/types";
 
 type SystemOverviewTabProps = {
@@ -42,16 +47,10 @@ export function SystemOverviewTab({
       </label>
 
       <div style={styles.summaryGrid}>
+        <SummaryCard label="Manual Power Sources" value={summary.manualPowerSources} />
         <SummaryCard label="Total Distros" value={summary.totalDistros} />
-        <SummaryCard label="Power Sources" value={summary.manualPowerSources} />
-        <SummaryCard
-          label="Connected Load Watts"
-          value={formatWatts(summary.connectedWatts)}
-        />
-        <SummaryCard
-          label="Connected Load Amps"
-          value={formatAmps(summary.connectedAmps)}
-        />
+        <SummaryCard label="Connected Load Watts" value={formatWatts(summary.connectedWatts)} />
+        <SummaryCard label="Connected Load Amps" value={formatAmps(summary.connectedAmps)} />
       </div>
 
       <section style={styles.healthCard}>
@@ -102,7 +101,7 @@ export function SystemOverviewTab({
                   <div>
                     <strong>{source.sourceName}</strong>
                     <p style={styles.muted}>
-                      {source.sourceConnection} · {source.sourceRating}A per phase
+                      {source.sourceConnection} · {source.sourceRating}A
                     </p>
                   </div>
 
@@ -113,42 +112,17 @@ export function SystemOverviewTab({
 
                 <PhaseLoadGrid loads={source.phaseLoads} rating={source.sourceRating} />
 
-                {source.issues.length > 0 && <IssueList issues={source.issues} compact />}
-
                 {source.distros.length === 0 ? (
                   <p style={styles.muted}>No distros assigned to this source.</p>
                 ) : (
                   <div style={styles.distroFlowList}>
                     {source.distros.map((distroSummary) => (
-                      <div key={distroSummary.distro.id} style={styles.distroFlowCard}>
-                        <div style={styles.sourceHeader}>
-                          <div>
-                            <strong>
-                              {displayDistroName(distroSummary.distro)}
-                            </strong>
-                            <p style={styles.muted}>
-                              {distroSummary.distro.name} · {distroSummary.distro.input}
-                            </p>
-                          </div>
-
-                          <button
-                            style={styles.secondaryButton}
-                            onClick={() => openDistroEditor(distroSummary.distro.id)}
-                          >
-                            Open
-                          </button>
-                        </div>
-
-                        <PhaseLoadGrid
-                          loads={distroSummary.phaseLoads}
-                          rating={distroSummary.distro.inputA}
-                        />
-
-                        <p style={styles.muted}>
-                          {formatWatts(distroSummary.watts)} ·{" "}
-                          {formatAmps(distroSummary.amps)}
-                        </p>
-                      </div>
+                      <DistroTreeCard
+                        key={distroSummary.distro.id}
+                        summary={distroSummary}
+                        openDistroEditor={openDistroEditor}
+                        depth={0}
+                      />
                     ))}
                   </div>
                 )}
@@ -163,23 +137,13 @@ export function SystemOverviewTab({
 
             <div style={styles.distroFlowList}>
               {summary.unassignedDistros.map((distroSummary) => (
-                <div key={distroSummary.distro.id} style={styles.unassignedCard}>
-                  <div style={styles.sourceHeader}>
-                    <div>
-                      <strong>{displayDistroName(distroSummary.distro)}</strong>
-                      <p style={styles.muted}>
-                        {distroSummary.distro.name} · {distroSummary.distro.input}
-                      </p>
-                    </div>
-
-                    <button
-                      style={styles.secondaryButton}
-                      onClick={() => openDistroEditor(distroSummary.distro.id)}
-                    >
-                      Open
-                    </button>
-                  </div>
-                </div>
+                <DistroTreeCard
+                  key={distroSummary.distro.id}
+                  summary={distroSummary}
+                  openDistroEditor={openDistroEditor}
+                  depth={0}
+                  unassigned
+                />
               ))}
             </div>
           </section>
@@ -189,10 +153,61 @@ export function SystemOverviewTab({
   );
 }
 
-function displayDistroName(distro: { instanceName: string; name: string }) {
-  return distro.instanceName.trim()
-    ? `${distro.instanceName} - ${distro.name}`
-    : distro.name;
+function DistroTreeCard({
+  summary,
+  openDistroEditor,
+  depth,
+  unassigned = false,
+}: {
+  summary: DistroLoadSummary;
+  openDistroEditor: (distroId: string) => void;
+  depth: number;
+  unassigned?: boolean;
+}) {
+  return (
+    <div
+      style={{
+        ...(unassigned ? styles.unassignedCard : styles.distroFlowCard),
+        marginLeft: depth ? `${depth * 22}px` : 0,
+      }}
+    >
+      <div style={styles.sourceHeader}>
+        <div>
+          <strong>{displayDistroName(summary.distro)}</strong>
+          <p style={styles.muted}>
+            {summary.distro.name} · {summary.distro.input}
+            {summary.distro.location ? ` · ${summary.distro.location}` : ""}
+          </p>
+        </div>
+
+        <button
+          style={styles.secondaryButton}
+          onClick={() => openDistroEditor(summary.distro.id)}
+        >
+          Open
+        </button>
+      </div>
+
+      <PhaseLoadGrid loads={summary.phaseLoads} rating={summary.distro.inputA} />
+
+      <p style={styles.muted}>
+        {formatWatts(summary.watts)} · {formatAmps(summary.amps)}
+      </p>
+
+      {(summary.children ?? []).length > 0 && (
+        <div style={styles.childList}>
+          {(summary.children ?? []).map((child) => (
+            <DistroTreeCard
+              key={child.distro.id}
+              summary={child}
+              openDistroEditor={openDistroEditor}
+              depth={depth + 1}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }
 
 function SummaryCard({ label, value }: { label: string; value: string | number }) {
@@ -204,15 +219,9 @@ function SummaryCard({ label, value }: { label: string; value: string | number }
   );
 }
 
-function IssueList({
-  issues,
-  compact = false,
-}: {
-  issues: ValidationIssue[];
-  compact?: boolean;
-}) {
+function IssueList({ issues }: { issues: ValidationIssue[] }) {
   return (
-    <div style={compact ? styles.compactIssueList : styles.issueList}>
+    <div style={styles.issueList}>
       {issues.map((issue) => (
         <div
           key={issue.id}
@@ -362,11 +371,6 @@ const styles: Record<string, React.CSSProperties> = {
     display: "grid",
     gap: "8px",
   },
-  compactIssueList: {
-    display: "grid",
-    gap: "6px",
-    marginTop: "10px",
-  },
   issueItem: {
     display: "grid",
     gridTemplateColumns: "90px 1fr",
@@ -447,6 +451,11 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: "14px",
     padding: "14px",
     background: "#f8fafc",
+  },
+  childList: {
+    display: "grid",
+    gap: "10px",
+    marginTop: "12px",
   },
   unassignedSection: {
     marginTop: "24px",
