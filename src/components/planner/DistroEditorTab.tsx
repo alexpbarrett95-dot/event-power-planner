@@ -21,6 +21,12 @@ type DraggedEquipment = {
   equipmentId: string;
 };
 
+type PhaseLoads = {
+  L1: number;
+  L2: number;
+  L3: number;
+};
+
 function createId(prefix: string) {
   return `${prefix}_${Math.random().toString(36).slice(2, 10)}`;
 }
@@ -86,7 +92,10 @@ function dragPayload(equipmentId: string): string {
 }
 
 function readDragPayload(event: DragEvent): DraggedEquipment | null {
-  const raw = event.dataTransfer.getData("application/json");
+  const json = event.dataTransfer.getData("application/json");
+  const text = event.dataTransfer.getData("text/plain");
+  const raw = json || text;
+
   if (!raw) return null;
 
   try {
@@ -94,6 +103,10 @@ function readDragPayload(event: DragEvent): DraggedEquipment | null {
     if (!parsed.equipmentId) return null;
     return parsed;
   } catch {
+    if (raw.startsWith("equipment:")) {
+      return { equipmentId: raw.replace("equipment:", "") };
+    }
+
     return null;
   }
 }
@@ -146,6 +159,47 @@ function outputSourceConnection(output: PlannerOutput) {
     : `${output.rating}A / 1`;
 }
 
+function emptyPhaseLoads(): PhaseLoads {
+  return { L1: 0, L2: 0, L3: 0 };
+}
+
+function addPhaseLoads(a: PhaseLoads, b: PhaseLoads): PhaseLoads {
+  return {
+    L1: a.L1 + b.L1,
+    L2: a.L2 + b.L2,
+    L3: a.L3 + b.L3,
+  };
+}
+
+function outputPhaseLoads(output: PlannerOutput): PhaseLoads {
+  const amps = outputAmps(output);
+
+  if (output.phase === "L1") return { L1: amps, L2: 0, L3: 0 };
+  if (output.phase === "L2") return { L1: 0, L2: amps, L3: 0 };
+  if (output.phase === "L3") return { L1: 0, L2: 0, L3: amps };
+
+  if (output.phase === "3Φ") {
+    const perPhase = amps / 3;
+    return { L1: perPhase, L2: perPhase, L3: perPhase };
+  }
+
+  if (output.phase === "Socapex") {
+    return (output.socaCircuits ?? []).reduce<PhaseLoads>(
+      (total, socket) => addPhaseLoads(total, outputPhaseLoads(socket)),
+      emptyPhaseLoads()
+    );
+  }
+
+  return emptyPhaseLoads();
+}
+
+function distroPhaseLoads(distro: ProjectDistro): PhaseLoads {
+  return distro.outputs.reduce<PhaseLoads>(
+    (total, output) => addPhaseLoads(total, outputPhaseLoads(output)),
+    emptyPhaseLoads()
+  );
+}
+
 export function DistroEditorTab({
   plannerState,
   setPlannerState,
@@ -153,6 +207,9 @@ export function DistroEditorTab({
 }: DistroEditorTabProps) {
   const [equipmentSearch, setEquipmentSearch] = useState("");
   const [equipmentCategory, setEquipmentCategory] = useState("");
+  const [draggingEquipmentId, setDraggingEquipmentId] = useState<string | null>(
+    null
+  );
 
   const activeDistro =
     plannerState.distros.find((distro) => distro.id === plannerState.active) ??
@@ -354,15 +411,28 @@ export function DistroEditorTab({
   }
 
   function handleDragStart(event: DragEvent, equipmentId: string) {
-    event.dataTransfer.setData("application/json", dragPayload(equipmentId));
+    const jsonPayload = dragPayload(equipmentId);
+    event.dataTransfer.setData("application/json", jsonPayload);
+    event.dataTransfer.setData("text/plain", `equipment:${equipmentId}`);
     event.dataTransfer.effectAllowed = "copy";
+    setDraggingEquipmentId(equipmentId);
+  }
+
+  function handleDragEnd() {
+    setDraggingEquipmentId(null);
   }
 
   function handleOutputDrop(event: DragEvent, outputId: string) {
     event.preventDefault();
+    event.stopPropagation();
+
     const payload = readDragPayload(event);
-    if (!payload) return;
-    addEquipmentToOutput(outputId, payload.equipmentId);
+    const equipmentId = payload?.equipmentId ?? draggingEquipmentId;
+
+    if (!equipmentId) return;
+
+    addEquipmentToOutput(outputId, equipmentId);
+    setDraggingEquipmentId(null);
   }
 
   function handleSocapexSocketDrop(
@@ -371,14 +441,15 @@ export function DistroEditorTab({
     socketId: string
   ) {
     event.preventDefault();
-    const payload = readDragPayload(event);
-    if (!payload) return;
+    event.stopPropagation();
 
-    addEquipmentToSocapexSocket(
-      socapexOutputId,
-      socketId,
-      payload.equipmentId
-    );
+    const payload = readDragPayload(event);
+    const equipmentId = payload?.equipmentId ?? draggingEquipmentId;
+
+    if (!equipmentId) return;
+
+    addEquipmentToSocapexSocket(socapexOutputId, socketId, equipmentId);
+    setDraggingEquipmentId(null);
   }
 
   function compatibleDownstreamDistros(output: PlannerOutput) {
@@ -507,12 +578,14 @@ export function DistroEditorTab({
     return total + mainOutputWatts + socaWatts;
   }, 0);
 
+  const phaseLoads = distroPhaseLoads(activeDistro);
+
   return (
     <section style={styles.editorLayout}>
       <aside style={styles.sidebar}>
         <h2>Equipment Library</h2>
         <p style={styles.muted}>
-          Drag equipment onto an output, or use the dropdowns inside each output.
+          Drag equipment onto a drop zone, or use the dropdowns inside each output.
         </p>
 
         <label style={styles.label}>
@@ -548,9 +621,15 @@ export function DistroEditorTab({
             filteredEquipment.map((item) => (
               <div
                 key={item.id}
-                style={styles.equipmentCard}
+                style={{
+                  ...styles.equipmentCard,
+                  ...(draggingEquipmentId === item.id
+                    ? styles.equipmentCardDragging
+                    : {}),
+                }}
                 draggable
                 onDragStart={(event) => handleDragStart(event, item.id)}
+                onDragEnd={handleDragEnd}
               >
                 <strong>{item.name}</strong>
                 <p style={styles.muted}>
@@ -592,6 +671,8 @@ export function DistroEditorTab({
             <strong>{activeDistro.outputs.length}</strong>
           </div>
         </div>
+
+        <PhaseCapacityGrid loads={phaseLoads} rating={activeDistro.inputA} />
 
         <div style={styles.controlsGrid}>
           <label style={styles.label}>
@@ -877,6 +958,66 @@ export function DistroEditorTab({
   );
 }
 
+function PhaseCapacityGrid({
+  loads,
+  rating,
+}: {
+  loads: PhaseLoads;
+  rating: number;
+}) {
+  return (
+    <div style={styles.phaseCapacityGrid}>
+      <PhaseCapacityCard phase="L1" amps={loads.L1} rating={rating} />
+      <PhaseCapacityCard phase="L2" amps={loads.L2} rating={rating} />
+      <PhaseCapacityCard phase="L3" amps={loads.L3} rating={rating} />
+    </div>
+  );
+}
+
+function PhaseCapacityCard({
+  phase,
+  amps,
+  rating,
+}: {
+  phase: string;
+  amps: number;
+  rating: number;
+}) {
+  const percent = rating ? Math.round((amps / rating) * 100) : 0;
+  const overloaded = percent > 100;
+  const nearLimit = percent >= 95;
+
+  return (
+    <div
+      style={{
+        ...styles.phaseCapacityCard,
+        ...(overloaded ? styles.phaseCapacityCritical : {}),
+      }}
+    >
+      <div style={styles.capacityHeader}>
+        <strong>{phase}</strong>
+        <span>
+          {formatAmps(amps)} / {formatAmps(rating)} · {percent}%
+        </span>
+      </div>
+
+      <div style={styles.capacityMeter}>
+        <div
+          style={{
+            ...styles.capacityFill,
+            width: `${Math.min(percent, 100)}%`,
+            background: overloaded
+              ? "#c53030"
+              : nearLimit
+                ? "#b7791f"
+                : "#0f8a5f",
+          }}
+        />
+      </div>
+    </div>
+  );
+}
+
 type OutputCardProps = {
   output: PlannerOutput;
   title: string;
@@ -921,8 +1062,6 @@ function OutputCard({
         ...styles.outputCard,
         ...(overloaded ? styles.outputCardCritical : {}),
       }}
-      onDragOver={(event) => event.preventDefault()}
-      onDrop={onDrop}
     >
       <div style={styles.outputHeader}>
         <strong>{title}</strong>
@@ -962,6 +1101,17 @@ function OutputCard({
             }}
           />
         </div>
+      </div>
+
+      <div
+        style={styles.dropZone}
+        onDragOver={(event) => {
+          event.preventDefault();
+          event.dataTransfer.dropEffect = "copy";
+        }}
+        onDrop={onDrop}
+      >
+        Drop equipment here
       </div>
 
       {threePhase && (
@@ -1028,7 +1178,7 @@ function OutputCard({
                     onChange={(event) =>
                       updateItemNotes(item.id, event.target.value)
                     }
-                    placeholder="e.g. FOH rack, LX bar 3, spare, client kit..."
+                    placeholder="e.g. FOH rack, LX bar 3, spare..."
                   />
                 </label>
               </div>
@@ -1117,13 +1267,29 @@ const styles: Record<string, React.CSSProperties> = {
     display: "grid",
     gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
     gap: "12px",
-    marginBottom: "18px",
+    marginBottom: "12px",
   },
   summaryCard: {
     border: "1px solid #d9e0ea",
     borderRadius: "14px",
     padding: "14px",
     background: "#f8fafc",
+  },
+  phaseCapacityGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+    gap: "10px",
+    marginBottom: "18px",
+  },
+  phaseCapacityCard: {
+    border: "1px solid #d9e0ea",
+    borderRadius: "14px",
+    padding: "12px",
+    background: "#f8fafc",
+  },
+  phaseCapacityCritical: {
+    border: "1px solid #c53030",
+    background: "#fff5f5",
   },
   label: {
     display: "block",
@@ -1293,6 +1459,17 @@ const styles: Record<string, React.CSSProperties> = {
     height: "100%",
     borderRadius: "999px",
   },
+  dropZone: {
+    marginTop: "10px",
+    border: "1px dashed #93c5fd",
+    borderRadius: "12px",
+    padding: "10px",
+    textAlign: "center",
+    background: "#eff6ff",
+    color: "#1d4ed8",
+    fontSize: "12px",
+    fontWeight: 800,
+  },
   addEquipmentRow: {
     marginTop: "10px",
   },
@@ -1361,5 +1538,9 @@ const styles: Record<string, React.CSSProperties> = {
     padding: "10px",
     background: "#f8fafc",
     cursor: "grab",
+  },
+  equipmentCardDragging: {
+    opacity: 0.5,
+    border: "1px dashed #2563eb",
   },
 };
