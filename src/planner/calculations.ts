@@ -327,7 +327,10 @@ export function validateOutput(
     ];
   }
 
-  if (amps > output.rating * 0.8) {
+  const warningThreshold =
+  output.phase !== "3Φ" && output.rating <= 32 ? 0.95 : 0.8;
+
+if (amps > output.rating * warningThreshold) {
     return [
       {
         id: `${output.id}-near-limit`,
@@ -365,30 +368,7 @@ export function validateDistro(
     issues.push(...validateOutput(output, outputContext, plannerState, distro));
   });
 
-  if (isThreePhaseConnection(distro.input)) {
-    const loads = distroPhaseLoads(distro, plannerState);
-    const imbalance = phaseImbalance(loads);
-
-    if (imbalance >= 50 && maxPhase(loads) > 5) {
-      issues.push({
-        id: `${distro.id}-phase-imbalance-critical`,
-        severity: "critical",
-        context: displayDistroName(distro),
-        message: `Severe phase imbalance on ${displayDistroName(
-          distro
-        )}: ${Math.round(imbalance)}%.`,
-      });
-    } else if (imbalance >= 30 && maxPhase(loads) > 5) {
-      issues.push({
-        id: `${distro.id}-phase-imbalance-warning`,
-        severity: "warning",
-        context: displayDistroName(distro),
-        message: `Phase imbalance on ${displayDistroName(distro)}: ${Math.round(
-          imbalance
-        )}%.`,
-      });
-    }
-  }
+  
 
   return issues;
 }
