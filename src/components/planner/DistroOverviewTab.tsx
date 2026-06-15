@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { autoSourcesForDistro } from "@/planner/autoSources";
 import { distroLibrary } from "@/planner/distroLibrary";
 import type {
   DistroDefinition,
@@ -26,6 +27,10 @@ function displayDistroName(distro: ProjectDistro) {
     : distro.name;
 }
 
+function normaliseConnection(value: string) {
+  return value.replace(/\s+/g, "").toLowerCase();
+}
+
 function allDistroDefinitions(plannerState: PlannerState): DistroDefinition[] {
   return [
     ...distroLibrary,
@@ -44,6 +49,11 @@ export function DistroOverviewTab({
 }: DistroOverviewTabProps) {
   const distroDefinitions = allDistroDefinitions(plannerState);
   const [selectedDistroIndex, setSelectedDistroIndex] = useState("0");
+
+  const allAvailableSources = [
+    ...plannerState.sources.filter((source) => !source.auto),
+    ...plannerState.distros.flatMap((distro) => autoSourcesForDistro(distro)),
+  ];
 
   function addDistro() {
     const definition = cloneDistro(
@@ -152,78 +162,87 @@ export function DistroOverviewTab({
         <p style={styles.muted}>No distros added yet.</p>
       ) : (
         <div style={styles.list}>
-          {plannerState.distros.map((distro) => (
-            <div key={distro.id} style={styles.distroCard}>
-              <div style={styles.headerRow}>
-                <div>
-                  <strong>{displayDistroName(distro)}</strong>
-                  <p style={styles.muted}>
-                    {distro.name} · Input {distro.input} ·{" "}
-                    {distro.outputs.length} outputs
-                  </p>
+          {plannerState.distros.map((distro) => {
+            const availableSources = allAvailableSources.filter(
+              (source) =>
+                normaliseConnection(source.conn) ===
+                normaliseConnection(distro.input)
+            );
+
+            return (
+              <div key={distro.id} style={styles.distroCard}>
+                <div style={styles.headerRow}>
+                  <div>
+                    <strong>{displayDistroName(distro)}</strong>
+                    <p style={styles.muted}>
+                      {distro.name} · Input {distro.input} ·{" "}
+                      {distro.outputs.length} outputs
+                    </p>
+                  </div>
+
+                  <div style={styles.row}>
+                    <button
+                      style={styles.secondaryButton}
+                      onClick={() => openDistroEditor(distro.id)}
+                    >
+                      Open
+                    </button>
+                    <button
+                      style={styles.dangerButton}
+                      onClick={() => deleteDistro(distro.id)}
+                    >
+                      Remove
+                    </button>
+                  </div>
                 </div>
 
-                <div style={styles.row}>
-                  <button
-                    style={styles.secondaryButton}
-                    onClick={() => openDistroEditor(distro.id)}
-                  >
-                    Open
-                  </button>
-                  <button
-                    style={styles.dangerButton}
-                    onClick={() => deleteDistro(distro.id)}
-                  >
-                    Remove
-                  </button>
+                <div style={styles.formGrid}>
+                  <label style={styles.label}>
+                    Name
+                    <input
+                      style={styles.input}
+                      value={distro.instanceName}
+                      onChange={(event) =>
+                        updateDistroName(distro.id, event.target.value)
+                      }
+                      placeholder="Optional name"
+                    />
+                  </label>
+
+                  <label style={styles.label}>
+                    Location
+                    <input
+                      style={styles.input}
+                      value={distro.location}
+                      onChange={(event) =>
+                        updateDistroLocation(distro.id, event.target.value)
+                      }
+                      placeholder="e.g. Stage Left"
+                    />
+                  </label>
+
+                  <label style={styles.label}>
+                    Source
+                    <select
+                      style={styles.input}
+                      value={distro.sourceId}
+                      onChange={(event) =>
+                        updateDistroSource(distro.id, event.target.value)
+                      }
+                    >
+                      <option value="">No source selected</option>
+                      {availableSources.map((source) => (
+                        <option key={source.id} value={source.id}>
+                          {source.auto ? "Auto: " : ""}
+                          {source.name} — {source.conn}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
                 </div>
               </div>
-
-              <div style={styles.formGrid}>
-                <label style={styles.label}>
-                  Name
-                  <input
-                    style={styles.input}
-                    value={distro.instanceName}
-                    onChange={(event) =>
-                      updateDistroName(distro.id, event.target.value)
-                    }
-                    placeholder="Optional name"
-                  />
-                </label>
-
-                <label style={styles.label}>
-                  Location
-                  <input
-                    style={styles.input}
-                    value={distro.location}
-                    onChange={(event) =>
-                      updateDistroLocation(distro.id, event.target.value)
-                    }
-                    placeholder="e.g. Stage Left"
-                  />
-                </label>
-
-                <label style={styles.label}>
-                  Source
-                  <select
-                    style={styles.input}
-                    value={distro.sourceId}
-                    onChange={(event) =>
-                      updateDistroSource(distro.id, event.target.value)
-                    }
-                  >
-                    <option value="">No source selected</option>
-                    {plannerState.sources.map((source) => (
-                      <option key={source.id} value={source.id}>
-                        {source.name} — {source.conn}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </section>
