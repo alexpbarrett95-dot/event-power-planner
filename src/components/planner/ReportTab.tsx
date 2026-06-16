@@ -241,7 +241,7 @@ export function ReportTab({
               margin: 0;
               padding: 10px;
               font-family: Arial, sans-serif;
-              color: #172033;
+              color: #111827;
               background: white;
               font-size: 10.5px;
             }
@@ -520,7 +520,7 @@ const styles: Record<string, CSSProperties> = {
     gap: "16px",
   },
   toolbar: {
-    border: "1px solid #d9e0ea",
+    border: "1px solid #DCE5EC",
     borderRadius: "18px",
     padding: "18px",
     background: "white",
@@ -530,27 +530,27 @@ const styles: Record<string, CSSProperties> = {
     alignItems: "center",
   },
   muted: {
-    color: "#637083",
+    color: "#667085",
   },
   primaryButton: {
     padding: "10px 14px",
     borderRadius: "10px",
-    border: "1px solid #172033",
-    background: "#172033",
-    color: "white",
+    border: "1px solid #000000",
+    background: "#000000",
+    color: "#ffffff",
     cursor: "pointer",
     fontWeight: 800,
   },
   secondaryButton: {
     padding: "7px 10px",
     borderRadius: "9px",
-    border: "1px solid #d9e0ea",
+    border: "1px solid #DCE5EC",
     background: "white",
-    color: "#172033",
+    color: "#111827",
     cursor: "pointer",
   },
   togglePanel: {
-    border: "1px solid #d9e0ea",
+    border: "1px solid #DCE5EC",
     borderRadius: "18px",
     padding: "18px",
     background: "white",
@@ -570,7 +570,7 @@ const styles: Record<string, CSSProperties> = {
     padding: "24px",
     background: "white",
     boxShadow: "0 8px 22px rgba(15, 23, 42, 0.08)",
-    color: "#172033",
+    color: "#111827",
     fontSize: "11px",
     lineHeight: 1.25,
   },
@@ -589,7 +589,7 @@ const styles: Record<string, CSSProperties> = {
     border: "1px solid #cbd5e1",
     borderRadius: "12px",
     padding: "9px",
-    background: "#f8fafc",
+    background: "#F5F7FA",
     display: "grid",
     gridTemplateColumns: "1fr 1fr 1fr",
     gap: "6px 16px",
@@ -616,7 +616,7 @@ const styles: Record<string, CSSProperties> = {
     border: "1px solid #cbd5e1",
     borderRadius: "9px",
     padding: "8px",
-    background: "#f8fafc",
+    background: "#F5F7FA",
     marginBottom: "8px",
     display: "grid",
     gap: "2px",
@@ -636,7 +636,7 @@ const styles: Record<string, CSSProperties> = {
     verticalAlign: "top",
     background: "#eaf1f8",
     fontWeight: 800,
-    color: "#172033",
+    color: "#111827",
   },
   td: {
     border: "1px solid #cbd5e1",
@@ -648,7 +648,7 @@ const styles: Record<string, CSSProperties> = {
   },
   emptyCell: {
     textAlign: "center",
-    color: "#637083",
+    color: "#667085",
     padding: "10px",
     border: "1px solid #cbd5e1",
   },

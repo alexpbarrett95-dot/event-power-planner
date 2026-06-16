@@ -214,13 +214,13 @@ export function CustomEquipmentTab({
 
 const styles: Record<string, React.CSSProperties> = {
   card: {
-    border: "1px solid #d9e0ea",
+    border: "1px solid #DCE5EC",
     borderRadius: "18px",
     padding: "18px",
     background: "white",
   },
   muted: {
-    color: "#637083",
+    color: "#667085",
   },
   formGrid: {
     display: "grid",
@@ -231,7 +231,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   label: {
     display: "block",
-    color: "#637083",
+    color: "#667085",
     fontWeight: 700,
   },
   input: {
@@ -239,29 +239,29 @@ const styles: Record<string, React.CSSProperties> = {
     padding: "10px",
     marginTop: "6px",
     borderRadius: "10px",
-    border: "1px solid #d9e0ea",
+    border: "1px solid #DCE5EC",
   },
   button: {
     marginTop: "12px",
     padding: "10px 14px",
     borderRadius: "10px",
-    border: "1px solid #172033",
-    background: "#172033",
-    color: "white",
+    border: "1px solid #000000",
+    background: "#000000",
+    color: "#ffffff",
     cursor: "pointer",
   },
   dangerButton: {
     padding: "10px 14px",
     borderRadius: "10px",
-    border: "1px solid #c53030",
-    background: "#fff5f5",
-    color: "#c53030",
+    border: "1px solid #E5484D",
+    background: "#FFF1F1",
+    color: "#E5484D",
     cursor: "pointer",
     alignSelf: "end",
   },
   divider: {
     border: 0,
-    borderTop: "1px solid #d9e0ea",
+    borderTop: "1px solid #DCE5EC",
     margin: "22px 0",
   },
   list: {
@@ -273,9 +273,9 @@ const styles: Record<string, React.CSSProperties> = {
     gridTemplateColumns: "1fr 260px 140px auto",
     gap: "12px",
     alignItems: "end",
-    border: "1px solid #d9e0ea",
+    border: "1px solid #DCE5EC",
     borderRadius: "14px",
     padding: "14px",
-    background: "#f8fafc",
+    background: "#F5F7FA",
   },
 };

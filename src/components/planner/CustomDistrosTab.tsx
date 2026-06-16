@@ -415,13 +415,13 @@ function outputLabel(output: PlannerOutput) {
 
 const styles: Record<string, React.CSSProperties> = {
   card: {
-    border: "1px solid #d9e0ea",
+    border: "1px solid #DCE5EC",
     borderRadius: "18px",
     padding: "18px",
     background: "white",
   },
   muted: {
-    color: "#637083",
+    color: "#667085",
   },
   setupGrid: {
     display: "grid",
@@ -431,7 +431,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   label: {
     display: "block",
-    color: "#637083",
+    color: "#667085",
     fontWeight: 700,
   },
   input: {
@@ -439,14 +439,14 @@ const styles: Record<string, React.CSSProperties> = {
     padding: "10px",
     marginTop: "6px",
     borderRadius: "10px",
-    border: "1px solid #d9e0ea",
+    border: "1px solid #DCE5EC",
   },
   builderPanel: {
     marginTop: "22px",
     padding: "16px",
-    border: "1px solid #d9e0ea",
+    border: "1px solid #DCE5EC",
     borderRadius: "16px",
-    background: "#f8fafc",
+    background: "#F5F7FA",
   },
   outputControlsGrid: {
     display: "grid",
@@ -454,7 +454,7 @@ const styles: Record<string, React.CSSProperties> = {
     gap: "12px",
   },
   outputControlCard: {
-    border: "1px solid #d9e0ea",
+    border: "1px solid #DCE5EC",
     borderRadius: "14px",
     padding: "14px",
     background: "white",
@@ -463,34 +463,34 @@ const styles: Record<string, React.CSSProperties> = {
     marginTop: "12px",
     padding: "10px 14px",
     borderRadius: "10px",
-    border: "1px solid #172033",
-    background: "#172033",
-    color: "white",
+    border: "1px solid #0BE3FF",
+    background: "#bcf7ff",
+    color: "#111827",
     cursor: "pointer",
   },
   primaryButton: {
     marginTop: "16px",
     padding: "10px 14px",
     borderRadius: "10px",
-    border: "1px solid #172033",
-    background: "#172033",
-    color: "white",
+    border: "1px solid #000000",
+    background: "#000000",
+    color: "#ffffff",
     cursor: "pointer",
   },
   smallButton: {
     padding: "8px 10px",
     borderRadius: "10px",
-    border: "1px solid #d9e0ea",
+    border: "1px solid #DCE5EC",
     background: "white",
-    color: "#172033",
+    color: "#111827",
     cursor: "pointer",
   },
   dangerButton: {
     padding: "8px 10px",
     borderRadius: "10px",
-    border: "1px solid #c53030",
-    background: "#fff5f5",
-    color: "#c53030",
+    border: "1px solid #E5484D",
+    background: "#FFF1F1",
+    color: "#E5484D",
     cursor: "pointer",
   },
   previewPanel: {
@@ -501,10 +501,10 @@ const styles: Record<string, React.CSSProperties> = {
     gap: "10px",
   },
   outputPreviewCard: {
-    border: "1px solid #d9e0ea",
+    border: "1px solid #DCE5EC",
     borderRadius: "14px",
     padding: "14px",
-    background: "#f8fafc",
+    background: "#F5F7FA",
     display: "flex",
     justifyContent: "space-between",
     gap: "12px",
@@ -518,7 +518,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   divider: {
     border: 0,
-    borderTop: "1px solid #d9e0ea",
+    borderTop: "1px solid #DCE5EC",
     margin: "22px 0",
   },
   savedList: {
@@ -526,10 +526,10 @@ const styles: Record<string, React.CSSProperties> = {
     gap: "10px",
   },
   savedCard: {
-    border: "1px solid #d9e0ea",
+    border: "1px solid #DCE5EC",
     borderRadius: "14px",
     padding: "14px",
-    background: "#f8fafc",
+    background: "#F5F7FA",
     display: "flex",
     justifyContent: "space-between",
     gap: "12px",

@@ -292,10 +292,10 @@ function PhaseLoadCard({
             width: `${Math.min(percentage, 100)}%`,
             background:
               percentage >= 100
-                ? "#c53030"
+                ? "#E5484D"
                 : percentage >= 95
-                  ? "#b7791f"
-                  : "#0f8a5f",
+                  ? "#B7791F"
+                  : "#0A8F5D",
           }}
         />
       </div>
@@ -305,7 +305,7 @@ function PhaseLoadCard({
 
 const styles: Record<string, React.CSSProperties> = {
   card: {
-    border: "1px solid #d9e0ea",
+    border: "1px solid #DCE5EC",
     borderRadius: "18px",
     padding: "18px",
     background: "white",
@@ -318,7 +318,7 @@ const styles: Record<string, React.CSSProperties> = {
     marginBottom: "18px",
   },
   muted: {
-    color: "#637083",
+    color: "#667085",
   },
   legend: {
     display: "flex",
@@ -326,9 +326,9 @@ const styles: Record<string, React.CSSProperties> = {
     flexWrap: "wrap",
     alignItems: "center",
     padding: "10px",
-    border: "1px solid #d9e0ea",
+    border: "1px solid #DCE5EC",
     borderRadius: "12px",
-    background: "#f8fafc",
+    background: "#F5F7FA",
   },
   legendItem: {
     display: "flex",
@@ -336,7 +336,7 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: "center",
     fontSize: "13px",
     fontWeight: 800,
-    color: "#344054",
+    color: "#111827",
   },
   legendLine: {
     display: "inline-block",
@@ -345,15 +345,15 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: "999px",
   },
   singlePhaseLine: {
-    background: "#2563eb",
-    borderColor: "#2563eb",
+    background: "#007D8F",
+    borderColor: "#007D8F",
   },
   threePhaseLine: {
     background: "#dc2626",
     borderColor: "#dc2626",
   },
   issuesPanel: {
-    border: "1px solid #d9e0ea",
+    border: "1px solid #DCE5EC",
     borderRadius: "16px",
     padding: "16px",
     background: "#ffffff",
@@ -372,14 +372,14 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: "13px",
   },
   issueWarning: {
-    background: "#fffbeb",
-    color: "#92400e",
-    border: "1px solid #fde68a",
+    background: "#FFFBEB",
+    color: "#92400E",
+    border: "1px solid #FDE68A",
   },
   issueCritical: {
-    background: "#fff5f5",
-    color: "#991b1b",
-    border: "1px solid #fecaca",
+    background: "#FFF1F1",
+    color: "#B42318",
+    border: "1px solid #FECACA",
   },
   flowSection: {
     marginTop: "10px",
@@ -389,7 +389,7 @@ const styles: Record<string, React.CSSProperties> = {
     gap: "18px",
   },
   sourceCard: {
-    border: "2px solid #172033",
+    border: "2px solid #111827",
     borderRadius: "18px",
     padding: "16px",
     background: "#ffffff",
@@ -405,7 +405,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   sourceTotal: {
     fontWeight: 800,
-    color: "#172033",
+    color: "#111827",
     whiteSpace: "nowrap",
   },
   treeList: {
@@ -443,8 +443,8 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 800,
   },
   singlePhaseBadge: {
-    background: "#eff6ff",
-    color: "#1d4ed8",
+    background: "#E6FBFF",
+    color: "#007D8F",
     border: "1px solid #bfdbfe",
   },
   threePhaseBadge: {
@@ -453,23 +453,23 @@ const styles: Record<string, React.CSSProperties> = {
     border: "1px solid #fecdd3",
   },
   distroCard: {
-    border: "1px solid #d9e0ea",
+    border: "1px solid #DCE5EC",
     borderRadius: "14px",
     padding: "14px",
-    background: "#f8fafc",
+    background: "#F5F7FA",
   },
   singlePhaseCard: {
-    borderLeft: "6px solid #2563eb",
+    borderLeft: "6px solid #007D8F",
   },
   threePhaseCard: {
     borderLeft: "6px solid #dc2626",
   },
   unassignedCard: {
-    border: "1px dashed #b7791f",
-    borderLeft: "6px solid #b7791f",
+    border: "1px dashed #B7791F",
+    borderLeft: "6px solid #B7791F",
     borderRadius: "14px",
     padding: "14px",
-    background: "#fffbeb",
+    background: "#FFFBEB",
   },
   distroHeader: {
     display: "flex",
@@ -486,7 +486,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   distroTotal: {
     fontWeight: 800,
-    color: "#172033",
+    color: "#111827",
     whiteSpace: "nowrap",
   },
   phaseGrid: {
@@ -496,7 +496,7 @@ const styles: Record<string, React.CSSProperties> = {
     marginTop: "12px",
   },
   phaseCard: {
-    border: "1px solid #d9e0ea",
+    border: "1px solid #DCE5EC",
     borderRadius: "12px",
     padding: "10px",
     background: "white",
@@ -510,7 +510,7 @@ const styles: Record<string, React.CSSProperties> = {
     height: "8px",
     borderRadius: "999px",
     overflow: "hidden",
-    background: "#edf0f5",
+    background: "#E9EEF3",
   },
   meterFill: {
     height: "100%",
@@ -527,9 +527,9 @@ const styles: Record<string, React.CSSProperties> = {
   secondaryButton: {
     padding: "9px 12px",
     borderRadius: "10px",
-    border: "1px solid #d9e0ea",
+    border: "1px solid #DCE5EC",
     background: "white",
-    color: "#172033",
+    color: "#111827",
     cursor: "pointer",
   },
 };

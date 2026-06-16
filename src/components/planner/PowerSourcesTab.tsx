@@ -355,7 +355,7 @@ export function PowerSourcesTab({
 
       <hr style={styles.divider} />
 
-      <h3>Auto-Created Power Sources</h3>
+      <h3>Distro Output Links</h3>
 
       <div style={styles.list}>
         {autoSourceSummaries.length === 0 ? (
@@ -504,10 +504,10 @@ function PhaseCard({
             ...styles.meterFill,
             width: `${Math.min(percent, 100)}%`,
             background: overloaded
-              ? "#c53030"
+              ? "#E5484D"
               : nearLimit
-                ? "#b7791f"
-                : "#0f8a5f",
+                ? "#B7791F"
+                : "#0A8F5D",
           }}
         />
       </div>
@@ -517,13 +517,13 @@ function PhaseCard({
 
 const styles: Record<string, React.CSSProperties> = {
   card: {
-    border: "1px solid #d9e0ea",
+    border: "1px solid #DCE5EC",
     borderRadius: "18px",
     padding: "18px",
     background: "white",
   },
   muted: {
-    color: "#637083",
+    color: "#667085",
   },
   formGrid: {
     display: "grid",
@@ -534,7 +534,7 @@ const styles: Record<string, React.CSSProperties> = {
   label: {
     display: "block",
     marginBottom: "14px",
-    color: "#637083",
+    color: "#667085",
     fontWeight: 700,
   },
   input: {
@@ -542,7 +542,7 @@ const styles: Record<string, React.CSSProperties> = {
     padding: "10px",
     marginTop: "6px",
     borderRadius: "10px",
-    border: "1px solid #d9e0ea",
+    border: "1px solid #DCE5EC",
   },
   textarea: {
     width: "100%",
@@ -550,27 +550,27 @@ const styles: Record<string, React.CSSProperties> = {
     padding: "10px",
     marginTop: "6px",
     borderRadius: "10px",
-    border: "1px solid #d9e0ea",
+    border: "1px solid #DCE5EC",
   },
   button: {
     padding: "10px 14px",
     borderRadius: "10px",
-    border: "1px solid #172033",
-    background: "#172033",
-    color: "white",
+    border: "1px solid #000000",
+    background: "#000000",
+    color: "#ffffff",
     cursor: "pointer",
   },
   dangerButton: {
     padding: "9px 12px",
     borderRadius: "10px",
-    border: "1px solid #c53030",
-    background: "#fff5f5",
-    color: "#c53030",
+    border: "1px solid #E5484D",
+    background: "#FFF1F1",
+    color: "#E5484D",
     cursor: "pointer",
   },
   divider: {
     border: 0,
-    borderTop: "1px solid #d9e0ea",
+    borderTop: "1px solid #DCE5EC",
     margin: "22px 0",
   },
   list: {
@@ -578,24 +578,24 @@ const styles: Record<string, React.CSSProperties> = {
     gap: "12px",
   },
   sourceCard: {
-    border: "1px solid #d9e0ea",
+    border: "1px solid #DCE5EC",
     borderRadius: "16px",
     padding: "16px",
-    background: "#f8fafc",
+    background: "#F5F7FA",
   },
   autoSourceCard: {
-    border: "1px dashed #93c5fd",
+    border: "1px dashed #0BE3FF",
     borderRadius: "16px",
     padding: "16px",
-    background: "#eff6ff",
+    background: "#E6FBFF",
   },
   cardWarning: {
     borderColor: "#f59e0b",
-    background: "#fffbeb",
+    background: "#FFFBEB",
   },
   cardCritical: {
-    borderColor: "#c53030",
-    background: "#fff5f5",
+    borderColor: "#E5484D",
+    background: "#FFF1F1",
   },
   sourceHeader: {
     display: "flex",
@@ -613,7 +613,7 @@ const styles: Record<string, React.CSSProperties> = {
     display: "grid",
     gap: "6px",
     justifyItems: "end",
-    color: "#172033",
+    color: "#111827",
     minWidth: "160px",
   },
   healthBadge: {
@@ -623,18 +623,18 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 800,
   },
   healthOk: {
-    background: "#ecfdf3",
-    color: "#0f8a5f",
+    background: "#EAFBF3",
+    color: "#0A8F5D",
   },
   healthWarning: {
-    background: "#fffbeb",
-    color: "#92400e",
-    border: "1px solid #fde68a",
+    background: "#FFFBEB",
+    color: "#92400E",
+    border: "1px solid #FDE68A",
   },
   healthCritical: {
-    background: "#fff5f5",
-    color: "#991b1b",
-    border: "1px solid #fecaca",
+    background: "#FFF1F1",
+    color: "#B42318",
+    border: "1px solid #FECACA",
   },
   phaseGrid: {
     display: "grid",
@@ -643,18 +643,18 @@ const styles: Record<string, React.CSSProperties> = {
     marginTop: "14px",
   },
   phaseCard: {
-    border: "1px solid #d9e0ea",
+    border: "1px solid #DCE5EC",
     borderRadius: "12px",
     padding: "10px",
     background: "white",
   },
   phaseWarning: {
     borderColor: "#f59e0b",
-    background: "#fffbeb",
+    background: "#FFFBEB",
   },
   phaseCritical: {
-    borderColor: "#c53030",
-    background: "#fff5f5",
+    borderColor: "#E5484D",
+    background: "#FFF1F1",
   },
   phaseHeader: {
     display: "flex",
@@ -665,7 +665,7 @@ const styles: Record<string, React.CSSProperties> = {
     height: "9px",
     borderRadius: "999px",
     overflow: "hidden",
-    background: "#edf0f5",
+    background: "#E9EEF3",
   },
   meterFill: {
     height: "100%",
@@ -674,11 +674,11 @@ const styles: Record<string, React.CSSProperties> = {
   imbalanceText: {
     marginTop: "10px",
     marginBottom: 0,
-    color: "#344054",
+    color: "#111827",
   },
   assignedBox: {
     marginTop: "14px",
-    border: "1px solid #d9e0ea",
+    border: "1px solid #DCE5EC",
     borderRadius: "12px",
     padding: "12px",
     background: "white",
@@ -696,10 +696,10 @@ const styles: Record<string, React.CSSProperties> = {
     paddingTop: "6px",
   },
   issuesPanel: {
-    border: "1px solid #d9e0ea",
+    border: "1px solid #DCE5EC",
     borderRadius: "16px",
     padding: "16px",
-    background: "#f8fafc",
+    background: "#F5F7FA",
     marginTop: "20px",
   },
   issueList: {
@@ -715,17 +715,17 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: "13px",
   },
   issueWarning: {
-    background: "#fffbeb",
-    color: "#92400e",
-    border: "1px solid #fde68a",
+    background: "#FFFBEB",
+    color: "#92400E",
+    border: "1px solid #FDE68A",
   },
   issueCritical: {
-    background: "#fff5f5",
-    color: "#991b1b",
-    border: "1px solid #fecaca",
+    background: "#FFF1F1",
+    color: "#B42318",
+    border: "1px solid #FECACA",
   },
   notes: {
     margin: "6px 0 0",
-    color: "#344054",
+    color: "#111827",
   },
 };

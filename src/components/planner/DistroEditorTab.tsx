@@ -930,17 +930,17 @@ function moveAssignedItemToSocapexSocket(
 
         <div style={styles.summaryGrid}>
           <div style={styles.summaryCard}>
-            <span>Total Load</span>
+            <span>Total Load </span>
             <strong>{formatWatts(totalWatts)}</strong>
           </div>
 
           <div style={styles.summaryCard}>
-            <span>Input</span>
+            <span>Input </span>
             <strong>{activeDistro.input}</strong>
           </div>
 
           <div style={styles.summaryCard}>
-            <span>Outputs</span>
+            <span>Outputs </span>
             <strong>{activeDistro.outputs.length}</strong>
           </div>
         </div>
@@ -1292,10 +1292,10 @@ function PhaseCapacityCard({
             ...styles.capacityFill,
             width: `${Math.min(percent, 100)}%`,
             background: overloaded
-              ? "#c53030"
+              ? "#E5484D"
               : nearLimit
-                ? "#b7791f"
-                : "#0f8a5f",
+                ? "#B7791F"
+                : "#0A8F5D",
           }}
         />
       </div>
@@ -1388,10 +1388,10 @@ function OutputCard({
               ...styles.capacityFill,
               width: `${Math.min(usagePercent, 100)}%`,
               background: overloaded
-                ? "#c53030"
+                ? "#E5484D"
                 : nearLimit
-                  ? "#b7791f"
-                  : "#0f8a5f",
+                  ? "#B7791F"
+                  : "#0A8F5D",
             }}
           />
         </div>
@@ -1534,26 +1534,26 @@ const styles: Record<string, React.CSSProperties> = {
     top: "20px",
     maxHeight: "calc(100vh - 40px)",
     overflow: "auto",
-    border: "1px solid #d9e0ea",
+    border: "1px solid #DCE5EC",
     borderRadius: "18px",
     padding: "18px",
     background: "white",
   },
   mainPanel: {
-    border: "1px solid #d9e0ea",
+    border: "1px solid #DCE5EC",
     borderRadius: "18px",
     padding: "18px",
     background: "white",
     minWidth: 0,
   },
   card: {
-    border: "1px solid #d9e0ea",
+    border: "1px solid #DCE5EC",
     borderRadius: "18px",
     padding: "18px",
     background: "white",
   },
   muted: {
-    color: "#637083",
+    color: "#667085",
   },
   headerRow: {
     display: "flex",
@@ -1573,10 +1573,10 @@ const styles: Record<string, React.CSSProperties> = {
     marginBottom: "12px",
   },
   summaryCard: {
-    border: "1px solid #d9e0ea",
+    border: "1px solid #DCE5EC",
     borderRadius: "14px",
     padding: "14px",
-    background: "#f8fafc",
+    background: "#F5F7FA",
   },
   phaseCapacityGrid: {
     display: "grid",
@@ -1585,51 +1585,51 @@ const styles: Record<string, React.CSSProperties> = {
     marginBottom: "18px",
   },
   phaseCapacityCard: {
-    border: "1px solid #d9e0ea",
+    border: "1px solid #DCE5EC",
     borderRadius: "14px",
     padding: "12px",
-    background: "#f8fafc",
+    background: "#F5F7FA",
   },
   phaseCapacityCritical: {
-    border: "1px solid #c53030",
-    background: "#fff5f5",
+    border: "1px solid #E5484D",
+    background: "#FFF1F1",
   },
   label: {
     display: "block",
     marginTop: "12px",
     marginBottom: "12px",
-    color: "#637083",
+    color: "#667085",
     fontWeight: 700,
   },
   feedLabel: {
     display: "block",
     marginTop: "10px",
-    color: "#172033",
+    color: "#111827",
     fontWeight: 800,
     fontSize: "12px",
-    border: "1px dashed #93c5fd",
+    border: "1px dashed #0BE3FF",
     borderRadius: "12px",
     padding: "10px",
-    background: "#eff6ff",
+    background: "#E6FBFF",
   },
   smallLabel: {
     display: "block",
     marginTop: "10px",
-    color: "#637083",
+    color: "#667085",
     fontWeight: 700,
     fontSize: "12px",
   },
   itemNotesLabel: {
     display: "block",
     marginTop: "8px",
-    color: "#637083",
+    color: "#667085",
     fontWeight: 700,
     fontSize: "12px",
   },
   qtyLabel: {
     display: "grid",
     gap: "4px",
-    color: "#637083",
+    color: "#667085",
     fontWeight: 700,
     fontSize: "12px",
   },
@@ -1638,7 +1638,7 @@ const styles: Record<string, React.CSSProperties> = {
     padding: "10px",
     marginTop: "6px",
     borderRadius: "10px",
-    border: "1px solid #d9e0ea",
+    border: "1px solid #DCE5EC",
   },
   textarea: {
     width: "100%",
@@ -1646,7 +1646,7 @@ const styles: Record<string, React.CSSProperties> = {
     padding: "10px",
     marginTop: "6px",
     borderRadius: "10px",
-    border: "1px solid #d9e0ea",
+    border: "1px solid #DCE5EC",
   },
   smallTextarea: {
     width: "100%",
@@ -1654,47 +1654,47 @@ const styles: Record<string, React.CSSProperties> = {
     padding: "8px",
     marginTop: "6px",
     borderRadius: "10px",
-    border: "1px solid #d9e0ea",
+    border: "1px solid #DCE5EC",
   },
   qtyInput: {
     width: "64px",
     padding: "8px",
     borderRadius: "10px",
-    border: "1px solid #d9e0ea",
+    border: "1px solid #DCE5EC",
   },
   button: {
     padding: "10px 14px",
     borderRadius: "10px",
-    border: "1px solid #172033",
-    background: "#172033",
-    color: "white",
+    border: "1px solid #0BE3FF",
+    background: "#0BE3FF",
+    color: "#111827",
     cursor: "pointer",
   },
   secondaryButton: {
     padding: "9px 12px",
     borderRadius: "10px",
-    border: "1px solid #d9e0ea",
+    border: "1px solid #DCE5EC",
     background: "white",
-    color: "#172033",
+    color: "#111827",
     cursor: "pointer",
   },
   dangerButton: {
     padding: "8px 10px",
     borderRadius: "10px",
-    border: "1px solid #c53030",
-    background: "#fff5f5",
-    color: "#c53030",
+    border: "1px solid #E5484D",
+    background: "#FFF1F1",
+    color: "#E5484D",
     cursor: "pointer",
   },
   divider: {
     border: 0,
-    borderTop: "1px solid #d9e0ea",
+    borderTop: "1px solid #DCE5EC",
     margin: "22px 0",
   },
   sectionBlock: {
     marginTop: "30px",
     paddingTop: "18px",
-    borderTop: "1px solid #d9e0ea",
+    borderTop: "1px solid #DCE5EC",
   },
   sectionTitle: {
     marginBottom: "14px",
@@ -1705,10 +1705,10 @@ const styles: Record<string, React.CSSProperties> = {
     gap: "12px",
   },
   phaseColumn: {
-    border: "1px solid #d9e0ea",
+    border: "1px solid #DCE5EC",
     borderRadius: "14px",
     padding: "12px",
-    background: "#f8fafc",
+    background: "#F5F7FA",
   },
   phaseTitle: {
     marginTop: 0,
@@ -1719,13 +1719,13 @@ const styles: Record<string, React.CSSProperties> = {
     gap: "10px",
   },
   outputCard: {
-    border: "1px solid #d9e0ea",
+    border: "1px solid #DCE5EC",
     borderRadius: "12px",
     padding: "12px",
     background: "white",
   },
   outputCardCritical: {
-    border: "1px solid #c53030",
+    border: "1px solid #E5484D",
     background: "#fffafa",
   },
   outputHeader: {
@@ -1736,11 +1736,11 @@ const styles: Record<string, React.CSSProperties> = {
   },
   pill: {
     borderRadius: "999px",
-    background: "#eef4ff",
+    background: "#E6FBFF",
     padding: "4px 8px",
     fontSize: "11px",
     fontWeight: 700,
-    color: "#344054",
+    color: "#111827",
   },
   capacityBlock: {
     marginTop: "10px",
@@ -1756,7 +1756,7 @@ const styles: Record<string, React.CSSProperties> = {
     height: "9px",
     borderRadius: "999px",
     overflow: "hidden",
-    background: "#edf0f5",
+    background: "#E9EEF3",
   },
   capacityFill: {
     height: "100%",
@@ -1764,12 +1764,12 @@ const styles: Record<string, React.CSSProperties> = {
   },
   dropZone: {
     marginTop: "10px",
-    border: "1px dashed #93c5fd",
+    border: "1px dashed #0BE3FF",
     borderRadius: "12px",
     padding: "10px",
     textAlign: "center",
-    background: "#eff6ff",
-    color: "#1d4ed8",
+    background: "#E6FBFF",
+    color: "#007D8F",
     fontSize: "12px",
     fontWeight: 800,
   },
@@ -1786,19 +1786,19 @@ const styles: Record<string, React.CSSProperties> = {
     gridTemplateColumns: "1fr auto auto",
     gap: "10px",
     alignItems: "start",
-    border: "1px solid #d9e0ea",
+    border: "1px solid #DCE5EC",
     borderRadius: "10px",
     padding: "10px",
-    background: "#eef4ff",
+    background: "#E6FBFF",
     cursor: "grab",
   },
 
   dragHandle: {
   padding: "8px 10px",
   borderRadius: "10px",
-  border: "1px solid #93c5fd",
-  background: "#eff6ff",
-  color: "#1d4ed8",
+  border: "1px solid #95c7ce",
+  background: "#E6FBFF",
+  color: "#007D8F",
   cursor: "grab",
   fontWeight: 800,
   alignSelf: "start",
@@ -1809,10 +1809,10 @@ const styles: Record<string, React.CSSProperties> = {
     gap: "14px",
   },
   socapexCard: {
-    border: "1px solid #d9e0ea",
+    border: "1px solid #DCE5EC",
     borderRadius: "14px",
     padding: "14px",
-    background: "#f8fafc",
+    background: "#F5F7FA",
   },
   socapexSocketGrid: {
     display: "grid",
@@ -1821,7 +1821,7 @@ const styles: Record<string, React.CSSProperties> = {
     marginTop: "12px",
   },
   socapexPhaseColumn: {
-    border: "1px solid #d9e0ea",
+    border: "1px solid #DCE5EC",
     borderRadius: "12px",
     padding: "10px",
     background: "white",
@@ -1837,7 +1837,7 @@ const styles: Record<string, React.CSSProperties> = {
     marginTop: "10px",
   },
   phaseMini: {
-    border: "1px solid #d9e0ea",
+    border: "1px solid #DCE5EC",
     borderRadius: "10px",
     padding: "8px",
     background: "white",
@@ -1849,14 +1849,14 @@ const styles: Record<string, React.CSSProperties> = {
     marginTop: "12px",
   },
   equipmentCard: {
-    border: "1px solid #d9e0ea",
+    border: "1px solid #DCE5EC",
     borderRadius: "12px",
     padding: "10px",
-    background: "#f8fafc",
+    background: "#F5F7FA",
     cursor: "grab",
   },
   equipmentCardDragging: {
     opacity: 0.5,
-    border: "1px dashed #2563eb",
+    border: "1px dashed #85bec7",
   },
 };

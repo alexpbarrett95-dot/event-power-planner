@@ -57,7 +57,12 @@ export function PlannerShell({
   }
 
   return (
-    <section style={styles.shell}>
+    <>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap');
+        * { box-sizing: border-box; }
+      `}</style>
+      <section style={styles.shell}>
       <div style={styles.tabs}>
         {tabs.map((tab) => (
           <button
@@ -125,35 +130,42 @@ export function PlannerShell({
           openDistroEditor={openDistroEditor}
         />
       )}
-    </section>
+      </section>
+    </>
   );
 }
 
 const styles: Record<string, React.CSSProperties> = {
   shell: {
     marginTop: "20px",
+    fontFamily: "'Outfit', Arial, sans-serif",
+    color: "#111827",
   },
   tabs: {
     display: "flex",
-    gap: "8px",
+    gap: "4px",
     flexWrap: "wrap",
-    marginBottom: "16px",
-    padding: "8px",
-    background: "#e9eef5",
-    border: "1px solid #d7dee8",
-    borderRadius: "16px",
+    marginBottom: "20px",
+    padding: "6px",
+    background: "#FFFFFF",
+    border: "1px solid #DCE5EC",
+    borderRadius: "18px",
+    boxShadow: "0 10px 30px rgba(17, 24, 39, 0.06)",
   },
   tab: {
-    padding: "10px 13px",
-    borderRadius: "11px",
-    border: 0,
-    background: "white",
-    color: "#172033",
+    position: "relative",
+    padding: "12px 14px",
+    borderRadius: "13px",
+    border: "1px solid transparent",
+    background: "transparent",
+    color: "#111827",
     fontWeight: 700,
     cursor: "pointer",
+    letterSpacing: "0.01em",
   },
   activeTab: {
-    background: "#111827",
-    color: "white",
+    background: "#ececec",
+    border: "1px solid #242424",
+    boxShadow: "inset 0 -3px 0 #383838",
   },
 };
