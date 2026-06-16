@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import type { ChangeEvent } from "react";
 import { CustomDistrosTab } from "@/components/planner/CustomDistrosTab";
 import { CustomEquipmentTab } from "@/components/planner/CustomEquipmentTab";
 import { DistroEditorTab } from "@/components/planner/DistroEditorTab";
@@ -33,11 +34,48 @@ const tabs: PlannerTab[] = [
   "Report",
 ];
 
+function safeFileName(value: string) {
+  const cleaned = value
+    .trim()
+    .replace(/[^a-z0-9-_]+/gi, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+
+  return cleaned || "power-planner-project";
+}
+
+function isPlannerState(value: unknown): value is PlannerState {
+  if (!value || typeof value !== "object") return false;
+
+  const candidate = value as Partial<PlannerState>;
+
+  return (
+    Array.isArray(candidate.sources) &&
+    Array.isArray(candidate.distros) &&
+    Array.isArray(candidate.customEquipment) &&
+    Array.isArray(candidate.customDistros) &&
+    (typeof candidate.systemName === "string" || candidate.systemName === undefined)
+  );
+}
+
+function normaliseImportedPlannerState(value: PlannerState): PlannerState {
+  return ensureAutoSources({
+    systemName: value.systemName ?? "Power Report",
+    sources: value.sources ?? [],
+    distros: value.distros ?? [],
+    active: value.active ?? null,
+    customEquipment: value.customEquipment ?? [],
+    customDistros: value.customDistros ?? [],
+    reportHiddenSources: value.reportHiddenSources ?? [],
+  });
+}
+
 export function PlannerShell({
   plannerState,
   setPlannerState,
 }: PlannerShellProps) {
   const [activeTab, setActiveTab] = useState<PlannerTab>("System Overview");
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     const updatedState = ensureAutoSources(plannerState);
@@ -56,6 +94,55 @@ export function PlannerShell({
     setActiveTab("Distro Editor");
   }
 
+  function exportPlannerJson() {
+    const exportState = normaliseImportedPlannerState(plannerState);
+    const json = JSON.stringify(exportState, null, 2);
+    const blob = new Blob([json], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    const stamp = new Date().toISOString().slice(0, 10);
+
+    link.href = url;
+    link.download = `${safeFileName(exportState.systemName)}-${stamp}.json`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  function requestImportPlannerJson() {
+    fileInputRef.current?.click();
+  }
+
+  async function importPlannerJson(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+
+    if (!file) return;
+
+    try {
+      const raw = await file.text();
+      const parsed = JSON.parse(raw) as unknown;
+
+      if (!isPlannerState(parsed)) {
+        alert("This does not look like a valid Event Power Planner export.");
+        return;
+      }
+
+      const confirmed = confirm(
+        "Importing this file will replace the current planner data for this project. Continue?"
+      );
+
+      if (!confirmed) return;
+
+      const importedState = normaliseImportedPlannerState(parsed);
+      setPlannerState(importedState);
+      setActiveTab("System Overview");
+    } catch {
+      alert("Could not import this file. Please check it is a valid JSON export.");
+    }
+  }
+
   return (
     <>
       <style>{`
@@ -63,73 +150,99 @@ export function PlannerShell({
         * { box-sizing: border-box; }
       `}</style>
       <section style={styles.shell}>
-      <div style={styles.tabs}>
-        {tabs.map((tab) => (
-          <button
-            key={tab}
-            style={{
-              ...styles.tab,
-              ...(activeTab === tab ? styles.activeTab : {}),
-            }}
-            onClick={() => setActiveTab(tab)}
-          >
-            {tab}
-          </button>
-        ))}
-      </div>
+        <div style={styles.utilityBar}>
+          <div>
+            <h2 style={styles.utilityTitle}>Power Planner</h2>
+            <p style={styles.utilityText}>
+              Export a backup before major edits, or import a planner JSON file to restore or share a system.
+            </p>
+          </div>
 
-      {activeTab === "System Overview" && (
-        <SystemOverviewTab
-          plannerState={plannerState}
-          setPlannerState={setPlannerState}
-          openDistroEditor={openDistroEditor}
-        />
-      )}
+          <div style={styles.utilityActions}>
+            <button style={styles.secondaryButton} onClick={requestImportPlannerJson}>
+              Import JSON
+            </button>
+            <button style={styles.primaryButton} onClick={exportPlannerJson}>
+              Export JSON
+            </button>
+          </div>
 
-      {activeTab === "Power Sources" && (
-        <PowerSourcesTab
-          plannerState={plannerState}
-          setPlannerState={setPlannerState}
-        />
-      )}
+          <input
+            ref={fileInputRef}
+            style={{ display: "none" }}
+            type="file"
+            accept="application/json,.json"
+            onChange={importPlannerJson}
+          />
+        </div>
 
-      {activeTab === "Distro Overview" && (
-        <DistroOverviewTab
-          plannerState={plannerState}
-          setPlannerState={setPlannerState}
-          openDistroEditor={openDistroEditor}
-        />
-      )}
+        <div style={styles.tabs}>
+          {tabs.map((tab) => (
+            <button
+              key={tab}
+              style={{
+                ...styles.tab,
+                ...(activeTab === tab ? styles.activeTab : {}),
+              }}
+              onClick={() => setActiveTab(tab)}
+            >
+              {tab}
+            </button>
+          ))}
+        </div>
 
-      {activeTab === "Distro Editor" && (
-        <DistroEditorTab
-          plannerState={plannerState}
-          setPlannerState={setPlannerState}
-          goToDistroOverview={() => setActiveTab("Distro Overview")}
-        />
-      )}
+        {activeTab === "System Overview" && (
+          <SystemOverviewTab
+            plannerState={plannerState}
+            setPlannerState={setPlannerState}
+            openDistroEditor={openDistroEditor}
+          />
+        )}
 
-      {activeTab === "Custom Equipment" && (
-        <CustomEquipmentTab
-          plannerState={plannerState}
-          setPlannerState={setPlannerState}
-        />
-      )}
+        {activeTab === "Power Sources" && (
+          <PowerSourcesTab
+            plannerState={plannerState}
+            setPlannerState={setPlannerState}
+          />
+        )}
 
-      {activeTab === "Custom Distros" && (
-        <CustomDistrosTab
-          plannerState={plannerState}
-          setPlannerState={setPlannerState}
-        />
-      )}
+        {activeTab === "Distro Overview" && (
+          <DistroOverviewTab
+            plannerState={plannerState}
+            setPlannerState={setPlannerState}
+            openDistroEditor={openDistroEditor}
+          />
+        )}
 
-      {activeTab === "Report" && (
-        <ReportTab
-          plannerState={plannerState}
-          setPlannerState={setPlannerState}
-          openDistroEditor={openDistroEditor}
-        />
-      )}
+        {activeTab === "Distro Editor" && (
+          <DistroEditorTab
+            plannerState={plannerState}
+            setPlannerState={setPlannerState}
+            goToDistroOverview={() => setActiveTab("Distro Overview")}
+          />
+        )}
+
+        {activeTab === "Custom Equipment" && (
+          <CustomEquipmentTab
+            plannerState={plannerState}
+            setPlannerState={setPlannerState}
+          />
+        )}
+
+        {activeTab === "Custom Distros" && (
+          <CustomDistrosTab
+            plannerState={plannerState}
+            setPlannerState={setPlannerState}
+          />
+        )}
+
+        {activeTab === "Report" && (
+          <ReportTab
+            plannerState={plannerState}
+            setPlannerState={setPlannerState}
+            openDistroEditor={openDistroEditor}
+          />
+        )}
       </section>
     </>
   );
@@ -140,6 +253,52 @@ const styles: Record<string, React.CSSProperties> = {
     marginTop: "20px",
     fontFamily: "'Outfit', Arial, sans-serif",
     color: "#111827",
+  },
+  utilityBar: {
+    display: "flex",
+    justifyContent: "space-between",
+    gap: "18px",
+    alignItems: "center",
+    marginBottom: "16px",
+    padding: "16px",
+    background: "#FFFFFF",
+    border: "1px solid #DCE5EC",
+    borderRadius: "20px",
+    boxShadow: "0 10px 30px rgba(17, 24, 39, 0.06)",
+  },
+  utilityTitle: {
+    margin: 0,
+    fontSize: "20px",
+    letterSpacing: "-0.02em",
+  },
+  utilityText: {
+    margin: "4px 0 0",
+    color: "#667085",
+    fontSize: "13px",
+  },
+  utilityActions: {
+    display: "flex",
+    gap: "8px",
+    flexWrap: "wrap",
+    justifyContent: "flex-end",
+  },
+  primaryButton: {
+    padding: "11px 14px",
+    borderRadius: "13px",
+    border: "1px solid #e9e9e9",
+    background: "#e0e0e0",
+    color: "#111827",
+    fontWeight: 800,
+    cursor: "pointer",
+  },
+  secondaryButton: {
+    padding: "11px 14px",
+    borderRadius: "13px",
+    border: "1px solid #DCE5EC",
+    background: "#FFFFFF",
+    color: "#111827",
+    fontWeight: 800,
+    cursor: "pointer",
   },
   tabs: {
     display: "flex",
