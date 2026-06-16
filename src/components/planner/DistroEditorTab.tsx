@@ -454,10 +454,15 @@ export function DistroEditorTab({
 
   function handleDragStart(event: DragEvent, equipmentId: string) {
     const jsonPayload = libraryDragPayload(equipmentId);
+
+    event.stopPropagation();
+    event.dataTransfer.clearData();
     event.dataTransfer.setData("application/json", jsonPayload);
-    event.dataTransfer.setData("text/plain", `equipment:${equipmentId}`);
-    event.dataTransfer.effectAllowed = "copy";
+    event.dataTransfer.setData("text/plain", jsonPayload);
+    event.dataTransfer.effectAllowed = "copyMove";
+
     setDraggingEquipmentId(equipmentId);
+    setDraggingAssignedItem(null);
   }
   function handleDragEnd() {
     setDraggingEquipmentId(null);
@@ -679,6 +684,7 @@ function moveAssignedItemToSocapexSocket(
 
     addEquipmentToOutput(outputId, equipmentId);
     setDraggingEquipmentId(null);
+    setDraggingAssignedItem(null);
   }
 
   function handleSocapexSocketDrop(
@@ -716,6 +722,7 @@ function moveAssignedItemToSocapexSocket(
 
     addEquipmentToSocapexSocket(socapexOutputId, socketId, equipmentId);
     setDraggingEquipmentId(null);
+    setDraggingAssignedItem(null);
   }
 
   function compatibleDownstreamDistros(output: PlannerOutput) {
@@ -1346,7 +1353,7 @@ function OutputCard({
       }}
       onDragOver={(event) => {
         event.preventDefault();
-        event.dataTransfer.dropEffect = "move";
+        event.dataTransfer.dropEffect = event.dataTransfer.effectAllowed === "move" ? "move" : "copy";
       }}
       onDrop={onDrop}
     >
@@ -1394,7 +1401,8 @@ function OutputCard({
         style={styles.dropZone}
         onDragOver={(event) => {
           event.preventDefault();
-          event.dataTransfer.dropEffect = "move";
+          event.stopPropagation();
+          event.dataTransfer.dropEffect = event.dataTransfer.effectAllowed === "move" ? "move" : "copy";
         }}
         onDrop={onDrop}
       >
