@@ -1789,7 +1789,7 @@ const styles: Record<string, React.CSSProperties> = {
     border: "1px solid #DCE5EC",
     borderRadius: "10px",
     padding: "10px",
-    background: "#E6FBFF",
+    background: "#ececec",
     cursor: "grab",
   },
 
