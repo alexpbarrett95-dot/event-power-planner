@@ -280,7 +280,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   utilityText: {
     margin: "4px 0 0",
-    color: "#667085",
+    color: "#000000",
     fontSize: "13px",
   },
   utilityActions: {

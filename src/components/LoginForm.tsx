@@ -58,7 +58,8 @@ const styles: Record<string, React.CSSProperties> = {
   page: {
     minHeight: "100vh",
     padding: "40px",
-    fontFamily: "Arial, sans-serif",
+    fontFamily: "'Outfit', Arial, sans-serif",
+    color: "#000000",
     background: "#f5f7fb",
   },
   card: {
