@@ -71,7 +71,7 @@ const styles: Record<string, React.CSSProperties> = {
     border: "1px solid #d9e0ea",
   },
   muted: {
-    color: "#637083",
+    color: "#000000",
   },
   label: {
     display: "block",
