@@ -1665,9 +1665,9 @@ const styles: Record<string, React.CSSProperties> = {
   button: {
     padding: "10px 14px",
     borderRadius: "10px",
-    border: "1px solid #0BE3FF",
-    background: "#0BE3FF",
-    color: "#111827",
+    border: "1px solid #000000",
+    background: "#ececec",
+    color: "#000000",
     cursor: "pointer",
   },
   secondaryButton: {
@@ -1764,12 +1764,12 @@ const styles: Record<string, React.CSSProperties> = {
   },
   dropZone: {
     marginTop: "10px",
-    border: "1px dashed #0BE3FF",
+    border: "1px dashed #000000",
     borderRadius: "12px",
     padding: "10px",
     textAlign: "center",
-    background: "#E6FBFF",
-    color: "#007D8F",
+    background: "#ececec",
+    color: "#000000",
     fontSize: "12px",
     fontWeight: 800,
   },
@@ -1796,9 +1796,9 @@ const styles: Record<string, React.CSSProperties> = {
   dragHandle: {
   padding: "8px 10px",
   borderRadius: "10px",
-  border: "1px solid #95c7ce",
-  background: "#E6FBFF",
-  color: "#007D8F",
+  border: "1px solid #000000",
+  background: "#ececec",
+  color: "#000000",
   cursor: "grab",
   fontWeight: 800,
   alignSelf: "start",
@@ -1857,6 +1857,6 @@ const styles: Record<string, React.CSSProperties> = {
   },
   equipmentCardDragging: {
     opacity: 0.5,
-    border: "1px dashed #85bec7",
+    border: "1px dashed #b4b4b4",
   },
 };

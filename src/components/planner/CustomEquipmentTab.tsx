@@ -246,8 +246,8 @@ const styles: Record<string, React.CSSProperties> = {
     padding: "10px 14px",
     borderRadius: "10px",
     border: "1px solid #000000",
-    background: "#000000",
-    color: "#ffffff",
+    background: "#ececec",
+    color: "#000000",
     cursor: "pointer",
   },
   dangerButton: {

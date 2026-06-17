@@ -463,9 +463,9 @@ const styles: Record<string, React.CSSProperties> = {
     marginTop: "12px",
     padding: "10px 14px",
     borderRadius: "10px",
-    border: "1px solid #0BE3FF",
-    background: "#bcf7ff",
-    color: "#111827",
+    border: "1px solid #000000",
+    background: "#ececec",
+    color: "#000000",
     cursor: "pointer",
   },
   primaryButton: {
